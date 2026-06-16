@@ -1,568 +1,231 @@
-<!DOCTYPE html>
+<!DOCTYPE html><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Job Search Tracker (Public)",
+  "schemaVersion": 1,
+  "description": "Live job search pipeline tracker for [redacted] — 16 seeded target companies (Senior PM payments/fintech/crypto, remote-EU). Editable stage dropdowns (Not started → To apply → Applied → Screening → Interview → Offer/Rejected), priority, next action, and notes. Auto-saves to localStorage; includes summary stats, search, filtering, sorting, add/delete rows. Manual tracker — no connector data."
+}
+</script>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Search Tracker</title>
 <style>
-:root {
-  --bg: #f4f6f9;
-  --surface: #ffffff;
-  --border: #e5e7eb;
-  --border-light: #f0f2f5;
-  --text: #111827;
-  --muted: #6b7280;
-  --blue: #2563eb;
-  --blue-light: #eff6ff;
-  --radius: 12px;
-  color-scheme: light;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-/* HEADER */
-.header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-.header h1 { font-size: 16px; font-weight: 700; }
-.header .sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
-
-/* LAYOUT */
-.wrap { max-width: 1300px; margin: 0 auto; padding: 16px; }
-
-/* STATS */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 8px;
-  text-align: center;
-}
-.stat .n { font-size: 22px; font-weight: 800; line-height: 1; }
-.stat .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
-
-/* TOOLBAR */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  margin-bottom: 12px;
-}
-.toolbar input[type="text"] {
-  flex: 1;
-  min-width: 140px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  background: var(--bg);
-  font-family: inherit;
-}
-.toolbar input[type="text"]:focus { outline: none; border-color: var(--blue); }
-.toolbar select {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  background: var(--bg);
-  cursor: pointer;
-}
-.btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid transparent;
-  font-family: inherit;
-  white-space: nowrap;
-}
-.btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-.btn.secondary { background: var(--surface); color: var(--blue); border-color: var(--blue); }
-.btn.ghost { background: var(--surface); color: var(--muted); border-color: var(--border); }
-
-/* TABLE — desktop */
-.table-wrap {
-  overflow-x: auto;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  -webkit-overflow-scrolling: touch;
-}
-table { width: 100%; border-collapse: collapse; min-width: 960px; }
-thead th {
-  background: #f8f9fb;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--muted);
-  padding: 10px;
-  text-align: left;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 57px;
-}
-thead th:hover { background: #f0f2f5; color: var(--text); }
-thead th.asc::after { content: " ↑"; }
-thead th.desc::after { content: " ↓"; }
-tbody td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border-light);
-  vertical-align: middle;
-}
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover td { background: #fafbfc; }
-td.co { font-weight: 600; font-size: 13px; white-space: nowrap; }
-td.role { color: var(--muted); font-size: 12px; max-width: 150px; }
-.fit-badge {
-  display: inline-block;
-  min-width: 28px;
-  text-align: center;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 12px;
-}
-select.stage-sel, select.prio-sel {
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 5px 6px;
-  font-size: 12px;
-  cursor: pointer;
-  max-width: 128px;
-}
-input.editable {
-  border: 1px solid transparent;
-  background: transparent;
-  padding: 5px 6px;
-  font-size: 12px;
-  width: 100%;
-  border-radius: 6px;
-  font-family: inherit;
-  color: var(--text);
-}
-input.editable:focus { border-color: var(--blue); background: var(--surface); outline: none; }
-.salary { font-size: 11px; color: var(--muted); white-space: nowrap; }
-.del { color: #d1d5db; cursor: pointer; font-size: 18px; border: none; background: none; padding: 4px 8px; border-radius: 6px; line-height: 1; }
-.del:hover { color: #ef4444; background: #fef2f2; }
-.lnk { text-decoration: none; font-size: 15px; color: var(--muted); display: inline-block; padding: 2px 4px; border-radius: 5px; }
-.lnk:hover { color: var(--blue); background: var(--blue-light); }
-
-/* MOBILE CARDS */
-.cards { display: none; }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin-bottom: 10px;
-}
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.card-info { flex: 1; min-width: 0; }
-.card-company { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
-.card-role { color: var(--muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-.card-selects select {
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.card-field { margin-bottom: 8px; }
-.card-field label {
-  display: block;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--muted);
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-.card-field input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: inherit;
-  background: var(--bg);
-  color: var(--text);
-}
-.card-field input:focus { border-color: var(--blue); outline: none; background: var(--surface); }
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-light);
-}
-.card-salary { font-size: 11px; color: var(--muted); }
-.card-actions { display: flex; gap: 8px; align-items: center; }
-.note-toggle {
-  font-size: 12px;
-  color: var(--blue);
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-}
-.note-body { display: none; margin-top: 8px; }
-.note-body.open { display: block; }
-.note-body input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px;
-  font-family: inherit;
-  background: var(--bg);
-  color: var(--muted);
-}
-.note-body input:focus { border-color: var(--blue); outline: none; background: var(--surface); color: var(--text); }
-
-/* FOOTER */
-.foot { margin-top: 12px; color: var(--muted); font-size: 11px; text-align: center; padding: 8px; }
-
-/* RESPONSIVE */
-@media (max-width: 820px) {
-  .table-wrap { display: none; }
-  .cards { display: block; }
-  .header { padding: 12px 16px; }
-  .header h1 { font-size: 14px; }
-  .header .sub { display: none; }
-  .wrap { padding: 10px; }
-  .stats { grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .stat { padding: 8px 4px; }
-  .stat .n { font-size: 18px; }
-  .stat .l { font-size: 9px; }
-  .toolbar { padding: 8px 10px; }
-  .toolbar input[type="text"] { min-width: 0; }
-  .btn { padding: 8px 10px; font-size: 12px; }
-}
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #f7f8fa; color: #1a1f29; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 20px 18px 60px; }
+h1 { font-size: 20px; margin: 0 0 2px; }
+.sub { color: #6b7280; font-size: 13px; margin: 0 0 18px; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; min-width: 84px; }
+.stat .n { font-size: 20px; font-weight: 700; }
+.stat .l { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .03em; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.toolbar input, .toolbar select { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; background: #fff; }
+.btn { padding: 7px 14px; border: 1px solid #2563eb; background: #2563eb; color: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.btn.sec { background: #fff; color: #2563eb; }
+.btn.ghost { background: #fff; color: #6b7280; border-color: #d1d5db; }
+table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #eef0f3; vertical-align: middle; }
+th { background: #f1f3f6; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #4b5563; cursor: pointer; user-select: none; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.company { font-weight: 600; }
+td.role { color: #4b5563; font-size: 13px; }
+.fit { display: inline-block; min-width: 26px; text-align: center; padding: 2px 6px; border-radius: 6px; font-weight: 700; font-size: 12px; }
+select.stage, select.prio { border: 1px solid #d1d5db; border-radius: 7px; padding: 5px 6px; font-size: 12px; background: #fff; max-width: 130px; }
+input.note, input.next { border: 1px solid transparent; background: transparent; padding: 5px 6px; font-size: 13px; width: 100%; border-radius: 6px; }
+input.note:focus, input.next:focus { border-color: #2563eb; background: #fff; outline: none; }
+.pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.del { color: #9ca3af; cursor: pointer; font-size: 16px; border: none; background: none; }
+.del:hover { color: #ef4444; }
+.salary { font-size: 12px; color: #4b5563; white-space: nowrap; }
+.foot { margin-top: 14px; color: #9ca3af; font-size: 12px; }
+.flag { font-size: 11px; color: #b45309; font-weight: 600; }
 </style>
 </head>
 <body>
-
-<header class="header">
-  <h1>Job Search Tracker</h1>
-  <div class="sub">Senior PM · Payments / Fintech / Crypto · Remote EU · €90–120k</div>
-</header>
-
 <div class="wrap">
+  <h1>Job Search Tracker — Senior PM, Payments / Fintech / Crypto</h1>
+  <p class="sub">Remote-EU · €90–120k base · обновляй стадии и заметки — всё сохраняется автоматически на этом устройстве.</p>
+
   <div class="stats" id="stats"></div>
 
   <div class="toolbar">
-    <input id="search" type="text" placeholder="Поиск по компании / роли…">
+    <input id="search" type="text" placeholder="Поиск по компании / роли…" style="flex:1; min-width:180px;">
     <select id="filterStage"><option value="">Все стадии</option></select>
-    <select id="filterPrio"><option value="">Приоритет</option></select>
-    <button class="btn secondary" id="addBtn">+ Добавить</button>
-    <button class="btn ghost" id="resetBtn">Сброс</button>
+    <select id="filterPrio"><option value="">Все приоритеты</option></select>
+    <button class="btn sec" id="addBtn">+ Добавить</button>
+    <button class="btn ghost" id="resetBtn">Сброс к исходным</button>
   </div>
 
-  <!-- Desktop table -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th data-sort="company">Компания</th>
-          <th></th>
-          <th data-sort="role">Роль</th>
-          <th data-sort="prio">Приоритет</th>
-          <th data-sort="fit">Fit</th>
-          <th data-sort="stage">Стадия</th>
-          <th data-sort="salary">Вилка</th>
-          <th>Next action</th>
-          <th>Заметки</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-  </div>
-
-  <!-- Mobile cards -->
-  <div class="cards" id="cards"></div>
-
-  <p class="foot">Данные хранятся локально на этом устройстве (localStorage)</p>
+  <table>
+    <thead>
+      <tr>
+        <th data-sort="company">Компания</th>
+        <th>🔗</th>
+        <th data-sort="role">Роль</th>
+        <th data-sort="prio">Приоритет</th>
+        <th data-sort="fit">Fit</th>
+        <th data-sort="stage">Стадия</th>
+        <th data-sort="salary">Вилка (est.)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p class="foot">Стадии: Not started → To apply → Applied → Screening → Interview → Offer / Rejected. Вилки — рыночные оценки, проверит Salary Coach. Данные хранятся локально (localStorage).</p>
 </div>
 
 <script>
 const STAGES = ["Not started","To apply","Applied","Screening","Interview","Offer","Rejected"];
-const PRIOS  = ["🔥 СРОЧНО","🔥 Высокий","Высокий","Средний","Watch"];
-const STAGE_C = {"Not started":"#e5e7eb","To apply":"#fde68a","Applied":"#bfdbfe","Screening":"#c7d2fe","Interview":"#a7f3d0","Offer":"#6ee7b7","Rejected":"#fecaca"};
-const PRIO_C  = {"🔥 СРОЧНО":"#fecaca","🔥 Высокий":"#fed7aa","Высокий":"#fde68a","Средний":"#e5e7eb","Watch":"#e0e7ff"};
+const PRIOS = ["🔥 СРОЧНО","🔥 Высокий","Высокий","Средний","Watch"];
+const STAGE_COLORS = {"Not started":"#e5e7eb","To apply":"#fde68a","Applied":"#bfdbfe","Screening":"#c7d2fe","Interview":"#a7f3d0","Offer":"#6ee7b7","Rejected":"#fecaca"};
+const PRIO_COLORS = {"🔥 СРОЧНО":"#fecaca","🔥 Высокий":"#fed7aa","Высокий":"#fde68a","Средний":"#e5e7eb","Watch":"#e0e7ff"};
 
 const SEED = [
-  {company:"Pleo",role:"Senior PM, Financial Core",prio:"🔥 СРОЧНО",fit:7,stage:"To apply",salary:"€95–120k",next:"Подать до 5 июня + take-home",note:"Дедлайн 5 июня. Ledger/EMI пробел закрыть в письме",url:"https://www.linkedin.com/jobs/view/4417083615/"},
-  {company:"Booksy",role:"Senior PM, Payments (Wallet)",prio:"🔥 Высокий",fit:9,stage:"To apply",salary:"€85–110k",next:"Резюме+письмо под pay-in/payout",note:"Лучший fit 9/10.",url:"https://www.linkedin.com/jobs/view/4415245449/"},
-  {company:"1inch",role:"Senior Technical PM, Swap",prio:"🔥 Высокий",fit:7.5,stage:"To apply",salary:"€100–140k",next:"Отправить (готово)",note:"Резюме+письмо готовы. Мост routing→DEX aggregation",url:"https://1inch.io/careers/"},
-  {company:"Fundraise Up",role:"Senior Product Owner, Checkout",prio:"🔥 Высокий",fit:8.5,stage:"To apply",salary:"€90–115k",next:"Резюме+письмо",note:"Checkout=твоё. Русскоязычная команда.",url:"https://www.linkedin.com/jobs/view/4393006772/"},
-  {company:"Adyen",role:"Senior PM, Payments",prio:"Высокий",fit:7.5,stage:"Not started",salary:"€100–130k",next:"Уточнить remote-EU",note:"Сильный бренд. Hybrid Amsterdam",url:"https://careers.adyen.com/vacancies"},
-  {company:"Revolut",role:"Senior PM, Payments/Crypto",prio:"Высокий",fit:7,stage:"Not started",salary:"€90–125k",next:"Найти вакансию на careers",note:"Самый достижимый из dream",url:"https://www.revolut.com/careers/"},
-  {company:"Coinbase",role:"Senior PM, Stablecoins & Payments",prio:"Высокий",fit:7,stage:"Not started",salary:"€110–150k",next:"Проверить EU work eligibility",note:"Crypto on/off-ramp мост. Многие роли US-remote",url:"https://www.coinbase.com/careers/positions"},
-  {company:"Mollie",role:"Senior PM, Payments/Checkout",prio:"Высокий",fit:8,stage:"Not started",salary:"€90–120k",next:"Найти вакансию",note:"Checkout/PSP в ядре, EU-first",url:"https://jobs.mollie.com/"},
-  {company:"WalletConnect / Reown",role:"PM, Wallet infra",prio:"Средний",fit:7,stage:"Not started",salary:"€100–140k",next:"Outreach к HM",note:"Форма слабее, чем outreach",url:"https://reown.com/careers"},
-  {company:"BVNK",role:"PM, Stablecoin/Payments",prio:"Высокий",fit:8,stage:"Not started",salary:"€95–130k",next:"Найти вакансию",note:"Stablecoin мост fiat↔crypto. Растут",url:"https://www.bvnk.com/careers"},
-  {company:"MoonPay",role:"Senior PM, Payments",prio:"Высокий",fit:8.5,stage:"Not started",salary:"€95–130k",next:"Проверить на Lever",note:"Crypto on/off-ramp = прямой опыт.",url:"https://jobs.lever.co/moonpay"},
-  {company:"Ramp Network",role:"PM, Payments/Ramp",prio:"Средний",fit:8,stage:"Not started",salary:"€90–120k",next:"Найти вакансию",note:"Crypto on-ramp (не US Ramp).",url:"https://ramp.network/careers"},
-  {company:"Bitpanda",role:"Senior PM, Payments/Trading",prio:"Средний",fit:7,stage:"Not started",salary:"€85–115k",next:"Найти вакансию",note:"EU crypto-broker",url:"https://www.bitpanda.com/en/career"},
-  {company:"Ledger",role:"PM, Wallet/Payments",prio:"Средний",fit:6.5,stage:"Not started",salary:"€90–120k",next:"Найти вакансию",note:"Wallet/security.",url:"https://www.ledger.com/careers"},
-  {company:"Constructor",role:"PM, Connector Integrations",prio:"Watch",fit:7.5,stage:"Rejected",salary:"€90–120k",next:"Ждать ответ Каролины/Натали. Следить за др. PM-ролями",note:"Отказ 04.06 (Nathalia Beserra). Тёплый контакт: Carolina (peer-PM). 3 открытые PM-роли — дверь приоткрыта",url:"https://job-boards.greenhouse.io/constructor"},
-  {company:"INXY Payments",role:"Senior Product Owner",prio:"Watch",fit:9,stage:"Not started",salary:"competitive",next:"Отслеживать repost",note:"Закрыта 12.03. Идеал: crypto payments, RU+EN, EU remote",url:"https://wantapply.com/company/inxy-payments"},
-  {company:"Wallet in Telegram",role:"PM, Customer Support (ops)",prio:"Средний",fit:6,stage:"Not started",salary:"проверить",next:"Уточнить вилку перед откликом",note:"Домейн-пивот: support-ops, не payments. Crypto/TON, remote worldwide",url:"https://www.tg-wallet.com/careers"},
-  {company:"N26",role:"Senior PM, Payments Platform (Backend)",prio:"🔥 Высокий",fit:8.5,stage:"Applied",salary:"€90–120k",next:"Ждать ответ. Материалы готовы.",note:"Откликнулся 04.06. Сильнейший fit: payments platform/scheme integrations + Барселона. Gap: SWIFT",url:"https://n26.com/en-eu/careers/positions/7140089"},
-  {company:"Wise",role:"Senior PM, Servicing Platform",prio:"Высокий",fit:7.5,stage:"Not started",salary:"€90–130k",next:"Проверить relocation Будапешт / remote",note:"Dream-компания. Локация Будапешт — не remote-EU",url:"https://www.wise.jobs/"},
-  {company:"Stripe",role:"PM, EMEA Payments Lead",prio:"Высокий",fit:8,stage:"Not started",salary:"€110–150k",next:"Проверить eligibility Dublin/London",note:"Dream-компания. Payments-ядро. Не remote-EU (Dublin/London)",url:"https://stripe.com/jobs/search"},
-  {company:"Qonto",role:"Senior PM, Connect (API & Integrations)",prio:"🔥 Высокий",fit:8.5,stage:"Applied",salary:"€90–120k",next:"Connect с Joséphine (Head of Product) на LinkedIn",note:"Откликнулся 04.06. Лучший fit: connector/API-интеграции + MCP. Gap: ERP/accounting интеграции",url:"https://qonto.com/en/careers"},
-  {company:"Qonto",role:"Senior PM, Savings",prio:"Низкий",fit:6.5,stage:"Not started",salary:"€85–115k",next:"Не приоритет — фокус на Connect-роли",note:"Savings-домен — смежно. Connect-роль намного сильнее",url:"https://qonto.com/en/careers"},
-  {company:"Finom",role:"Senior PM, Savings & Investments",prio:"Средний",fit:6,stage:"Not started",salary:"€80–110k",next:"Найти вакансию / проверить remote",note:"Fintech, savings/investments. Локация Эстония",url:"https://careers.finom.com/"},
-  {company:"Constructor",role:"PM, Merchant Intelligence",prio:"Средний",fit:7,stage:"Not started",salary:"€90–120k",next:"НЕ подавать вслепую — спросить Kelsey",note:"Та же компания, где идёт интервью. Вторая открытая PM-роль.",url:"https://job-boards.greenhouse.io/constructor"},
-  {company:"Constructor",role:"PM, Demo Experience",prio:"Средний",fit:6.5,stage:"Not started",salary:"€90–120k",next:"НЕ подавать вслепую — координировать с Kelsey",note:"Третья открытая PM-роль у Constructor. Demo/sales-engineering сторона.",url:"https://job-boards.greenhouse.io/constructor"},
-  {company:"GoMining",role:"PM, Payments",prio:"Средний",fit:7.5,stage:"Applied",salary:"⚠️ уточнить вилку",next:"Ждать ответ. На скрининге СРАЗУ прояснить зарплату",note:"Откликнулся 04.06. Сильный fit: conversion/approval rate/A/B/PSP. Риск только по деньгам",url:"https://apply.workable.com/gomining/"},
-  {company:"Salmon",role:"TPM, Cards System Analyst",prio:"Высокий",fit:8,stage:"Applied",salary:"проверить",next:"Ждать ответ. Mike Novikov написан.",note:"Откликнулся 04.06. Сильнейший fit: card acquiring/issuers/schemes. Уточнить remote из Барселоны",url:"https://salmon.ph/careers"},
-  {company:"Salmon",role:"TPM, Reconciliation",prio:"Средний",fit:6.5,stage:"Applied",salary:"проверить",next:"Ждать. УТОЧНИТЬ: remote Kazakhstan/Armenia/Georgia — из Испании?",note:"Откликнулся 04.06. Gap: SWIFT/ISO20022/RTGS — отыгран честно",url:"https://jobs.ashbyhq.com/salmon-group/ecccd048-5ea9-478e-bdc9-553233e7a69f"},
-  {company:"dLocal",role:"Senior PM, Cross-Border Operations",prio:"🔥 Высокий",fit:7,stage:"Screening",salary:"уточнить",next:"Скрининг с Minas ✅ → Next: Gabriel Falck (tech interview)",note:"Приглашён на звонок 09.06 (Minas, People team). Роль: Cross-Border Operations. AI/Claude-focus",url:"https://www.dlocal.com/careers"},
-  {company:"MoonPay",role:"Senior PM, Card Payments & Issuing",prio:"🔥 Высокий",fit:8.5,stage:"Not started",salary:"€95–130k",next:"Подать заявку. Другая роль, не On/Off-ramp",note:"Card acquiring 160+ стран + card issuing Web3/crypto. Remote Spain/Portugal.",url:"https://jobs.lever.co/moonpay/edd83af9-0f56-498a-bfa0-915c9a136001"},
-  {company:"Yuno",role:"Senior PM, MX/DX SDK Team",prio:"Высокий",fit:7.5,stage:"Not started",salary:"уточнить",next:"Подать заявку. Remote Spain подходит",note:"Payment orchestration SDK/DX. Remote ES/PT/BE/IE.",url:"https://jobs.lever.co/yuno/52be3369-2156-48c3-b498-4c37d23e33e2"},
-  {company:"Nuvei",role:"PM, Payment Gateway",prio:"Высокий",fit:7.5,stage:"Not started",salary:"€85–120k",next:"Проверить EU remote eligibility, подать",note:"Глобальный PSP: 200+ маркетов, 586 APM. EU presence (Amsterdam и др.)",url:"https://apply.workable.com/nuvei/j/4F4D715492"},
-  {company:"FYST",role:"Senior PM, Integrations (Payments)",prio:"Watch",fit:8.5,stage:"Not started",salary:"€80–120k",next:"Отслеживать repost / прямой outreach",note:"Закрыта июнь 2026. Идеальный fit: API интеграции PSP/acquirers, 3DS2, routing. Russian required ✓",url:"https://fyst.com/careers"},
-  {company:"BVNK",role:"PM, Billing & Fees",prio:"Средний",fit:6.5,stage:"Not started",salary:"уточнить",next:"Проверить конфликт с BVNK PM Stablecoin/Payments",note:"Billing platform. Spain ОК.",url:"https://job-boards.eu.greenhouse.io/bvnk/jobs/4875965101"},
-  {company:"MoonPay",role:"PM, Partner",prio:"Средний",fit:7,stage:"Not started",salary:"уточнить",next:"Подать заявку. Другая роль vs Card Payments & Issuing",note:"B2B2C партнёрский PM для ramps-продукта. Remote.",url:"https://jobs.lever.co/moonpay/e21bd683-a9ad-4e0c-9f0a-b8b7d0ff6e8a"},
-  {company:"Salmon",role:"Senior PM, Cross-Border Payments",prio:"🔥 Высокий",fit:8,stage:"To apply",salary:"уточнить",next:"Заход через реферал Артура → подать по ссылке.",note:"Сильный домен-fit: cross-border/regulated/стейблкоины. Манила (релокация) — Mark готов.",url:"https://salmon-jobs.super.site/senior-product-manager-cross-border-payments"},
-  {company:"Salmon",role:"Operations PM (отклонил)",prio:"Watch",fit:3,stage:"Rejected",salary:"—",next:"Не подаём. Использовать реферал Артура в payments-команду",note:"Артур Yumaev ответил 09.06: роль не релевантна, но предложил показать резюме payments-коллегам.",url:"https://lnkd.in/gd_K9eZE"},
-  {company:"Payrails",role:"Senior PM, Integrations",prio:"🔥 Высокий",fit:9,stage:"Not started",salary:"€90–130k",next:"Подать заявку — открыта с апреля 2026, Remote EMEA",note:"PSP/APM интеграционная платформа — прямой fit Payabl/Praxis. a16z-backed.",url:"https://weworkremotely.com/remote-jobs/payrails-senior-product-manager-integrations"},
-  {company:"Payrails",role:"Senior PM, Payments",prio:"Высокий",fit:8,stage:"Not started",salary:"€90–130k",next:"Проверить ashbyhq.com/payrails",note:"Payment orchestration: routing, 3DS, token vault, reconciliation. Berlin HQ / remote.",url:"https://jobs.ashbyhq.com/payrails/c4048896-5de7-4dfa-8bfb-bd7c9b114287"},
-  {company:"Jeeves",role:"PM, Stablecoin & Digital Assets",prio:"Средний",fit:7,stage:"Not started",salary:"€90–120k",next:"Проверить EU remote eligibility перед откликом",note:"Cross-border payments + stablecoin roadmap. a16z/YC-backed.",url:"https://jobs.lever.co/tryjeeves/458f8fa9-ff1b-4cde-a703-61e5832ee756"},
-  {company:"Printify",role:"Senior PM, Payment Orchestration",prio:"Средний",fit:7,stage:"Not started",salary:"⚠️ Riga-based",next:"Проверить актуальность на jobs.printify.com",note:"Payment orchestration — прямое ядро. Remote EMEA. Минус: e-commerce/print-on-demand.",url:"https://startup.jobs/senior-product-manager-payment-orchestration-remote-within-emea-printify-5810650"},
-  {company:"Mollie",role:"PM, Cards",prio:"Средний",fit:6.5,stage:"Not started",salary:"уточнить",next:"Уточнить грейд (PM, не Senior) и remote/Amsterdam",note:"Cards/issuing у топ-EU PSP. Минусы: грейд PM, Amsterdam on-site/hybrid.",url:"https://jobs.mollie.com/vacancies/4cb442e2-e761-40bf-bb77-57e93b17fca7"},
-  {company:"LearnWorlds",role:"Senior PM, Payments & E-commerce",prio:"Средний",fit:6.5,stage:"Not started",salary:"уточнить",next:"Проверить вакансию на learnworlds.com",note:"PSP-интеграции, checkout, billing. Remote Europe. Домен B2B SaaS (e-learning).",url:"https://www.learnworlds.com/job/senior-product-manager-payments-e-commerce-remote-europe/"},
-  {company:"Stripe",role:"PM, Local Payment Methods EMEA",prio:"🔥 Высокий",fit:8.5,stage:"Not started",salary:"€102–154k",next:"Подать заявку — офис Барселона указан явно.",note:"APM/local payment methods — прямой мост (PIX/UPI/APM). Офисы: Dublin/Barcelona/London (hybrid 50%). Dream-компания.",url:"https://stripe.com/jobs/listing/product-manager-local-payment-methods-emea/7486955"},
-  {company:"dLocal",role:"Senior PM, Balance (Barcelona)",prio:"Средний",fit:7,stage:"Not started",salary:"уточнить",next:"⚠️ Проверить hard-req: EU citizenship.",note:"Balance/settlement engine. Барселона. Блокер: EU citizenship mandatory.",url:"https://jobs.lever.co/dlocal"},
-  {company:"PawaPay",role:"Payments Product Manager",prio:"Средний",fit:7,stage:"Not started",salary:"уточнить",next:"Уточнить вилку на скрининге. Подать при интересе",note:"Крупнейший mobile money PSP Африки: payments API, 4M tx/день, 20 стран. Remote EU.",url:"https://job-boards.eu.greenhouse.io/pawapay/jobs/4836386101"},
-  {company:"FREE NOW",role:"PM, Invoicing & Partner Payments",prio:"Средний",fit:6.5,stage:"Not started",salary:"уточнить",next:"Подать через Greenhouse — Барселона или remote",note:"FinTech-домен внутри mobility. Барселона офис или 100% remote.",url:"https://boards.greenhouse.io/freenow/jobs/3790338"},
-  {company:"Deel",role:"Staff PM — Fintech, Client Experience",prio:"Высокий",fit:7.5,stage:"Not started",salary:"уточнить",next:"⚠️ Проверить живость на Ashby: постинг от 09.02",note:"Client payment journey: payment methods, invoices, autopay, FX/fees. Remote EMEA.",url:"https://jobs.ashbyhq.com/deel/a446c59c-83f8-4034-94e9-baa042884de6"},
-  {company:"dLocal",role:"Lead PM, Core Services Finance",prio:"Средний",fit:6.5,stage:"Not started",salary:"уточнить",next:"Проверить конфликт с Cross-Border процессом. Spanish required ✓",note:"Lead PM по внутренним финансовым системам: settlements, balance, treasury. Remote Barcelona/Madrid ✓.",url:"https://jobs.lever.co/dlocal/cf31b043-a264-4fe9-a4d9-be0de4f75f46"},
-  {company:"Mangopay",role:"PM, Payments Platform",prio:"🔥 Высокий",fit:8,stage:"Not started",salary:"€80–110k",next:"Подать через Greenhouse — Spain (Barcelona) eligible.",note:"3DS/card vaulting/PSP connectors/Network Tokens/reconciliation = прямой мост Payabl/Praxis. Spain/UK/EU eligible ✓.",url:"https://job-boards.eu.greenhouse.io/mangopay/jobs/4821925101"},
-  {company:"Checkout.com",role:"Senior PM, Card Processing",prio:"Средний",fit:7,stage:"Not started",salary:"€90–130k",next:"Проверить remote/hybrid из Барселоны — роль listed как London.",note:"Card acquiring/processing, scheme requirements. Enterprise PSP. Минус: London-centric.",url:"https://jobs.ashbyhq.com/checkout.com/12cddf3a-be1f-4d4b-b168-f342406cab50"},
-  {company:"Wise",role:"Senior PM, Europe & UK Pay-in",prio:"Средний",fit:7,stage:"Not started",salary:"£83–110k",next:"Проверить remote из Барселоны — роль в London/Tallinn/Budapest.",note:"Dream-компания. Pay-in team: OpenBanking VRP/PIS в EU. Ограничения по локации.",url:"https://www.wise.jobs/role/4544470-senior-product-manager-europe-uk-pay-in/"},
-  {company:"Bitpanda",role:"Senior PM, Web3",prio:"Средний",fit:6.5,stage:"Not started",salary:"⚠️ уточнить вилку",next:"Проверить актуальность + вилку на bitpanda.com/career.",note:"Web3: non-custodial wallet, Vision Chain (L2). Barcelona talent hub ✓. Риск по зарплате.",url:"https://beincrypto.com/jobs/p/senior-product-manager-web3-spain-bitpanda"},
-  {company:"Yuno",role:"Senior PM, Core Team",prio:"🔥 Высокий",fit:8.5,stage:"Not started",salary:"уточнить",next:"Подать заявку. Remote EU/Americas. Другая роль чем MX/DX SDK",note:"Payment orchestration core platform. 6+ лет required.",url:"https://jobs.lever.co/yuno/08c6d583-5bba-4c56-81c2-9fd9991d7110"},
-  {company:"Primer",role:"PM, Orchestration",prio:"🔥 Высокий",fit:8.5,stage:"Not started",salary:"€85–120k",next:"Проверить на jobs.ashbyhq.com/primer.io и подать.",note:"Ex-PayPal/Braintree основатели. No-code payment orchestration: routing, PSP integrations. Remote-first.",url:"https://jobs.ashbyhq.com/primer.io"},
-  {company:"Trustly",role:"Senior PM, FIC (Open Banking Connectors)",prio:"Высокий",fit:7.5,stage:"Not started",salary:"уточнить",next:"Проверить EU eligibility. Подать через Lever",note:"Open banking connector integrations. Remote worldwide. Gap: Open Banking Standards.",url:"https://jobs.lever.co/trustly/6ae42bbd-766a-48ee-8d03-bcd1f4ac2504"},
-  {company:"MoonPay",role:"Senior PM, Cards",prio:"Высокий",fit:7.5,stage:"Not started",salary:"уточнить",next:"Подать. Crypto spend card (greenfield)",note:"Другой продукт vs Card Payments & Issuing в трекере. Remote.",url:"https://jobs.lever.co/moonpay/ba7a2c85-4ddc-4e72-bfc3-0bc7a783d98a"},
-  {company:"Nuvei",role:"Senior PM",prio:"Высокий",fit:7,stage:"Not started",salary:"уточнить",next:"Проверить описание роли.",note:"Старший уровень vs PM Gateway (4F4D715492). Nuvei = global PSP, EU офисы: Sofia, Vilnius.",url:"https://apply.workable.com/nuvei/j/FCE964442A"},
-  {company:"Mollie",role:"PM, Local Payment Methods",prio:"Средний",fit:6.5,stage:"Not started",salary:"уточнить",next:"Уточнить грейд и remote/Amsterdam. Третья роль Mollie",note:"APM portfolio 30+ методов. Amsterdam. Грейд: PM (не Senior) — риск.",url:"https://jobs.mollie.com/vacancies-2/product-manager-local-payment-methods"},
-  {company:"dLocal",role:"Senior PM, Virtual Accounts",prio:"Высокий",fit:7.5,stage:"Not started",salary:"уточнить",next:"⚠️ Уточнить у Minas — не конфликтует ли с Cross-Border процессом.",note:"Virtual accounts = локальные счета (IBANs, LatAm). Прямой мост settlement/reconciliation опыту. Четвёртая роль dLocal.",url:"https://jobs.lever.co/dlocal/82af4022-3088-4513-b540-289a13ce2e9f"}
+  {company:"Pleo", role:"Senior PM, Financial Core", prio:"🔥 СРОЧНО", fit:7, stage:"To apply", salary:"€95–120k", next:"", note:"", url:"https://www.linkedin.com/jobs/view/4417083615/"},
+  {company:"Booksy", role:"Senior PM, Payments (Wallet)", prio:"🔥 Высокий", fit:9, stage:"To apply", salary:"€85–110k", next:"", note:"", url:"https://www.linkedin.com/jobs/view/4415245449/"},
+  {company:"1inch", role:"Senior Technical PM, Swap", prio:"🔥 Высокий", fit:7.5, stage:"To apply", salary:"€100–140k", next:"", note:"", url:"https://1inch.io/careers/"},
+  {company:"Fundraise Up", role:"Senior Product Owner, Checkout", prio:"🔥 Высокий", fit:8.5, stage:"To apply", salary:"€90–115k", next:"", note:"", url:"https://www.linkedin.com/jobs/view/4393006772/"},
+  {company:"Adyen", role:"Senior PM, Payments", prio:"Высокий", fit:7.5, stage:"Not started", salary:"€100–130k", next:"", note:"", url:"https://careers.adyen.com/vacancies"},
+  {company:"Revolut", role:"Senior PM, Payments/Crypto", prio:"Высокий", fit:7, stage:"Not started", salary:"€90–125k", next:"", note:"", url:"https://www.revolut.com/careers/"},
+  {company:"Coinbase", role:"Senior PM, Stablecoins & Payments", prio:"Высокий", fit:7, stage:"Not started", salary:"€110–150k", next:"", note:"", url:"https://www.coinbase.com/careers/positions"},
+  {company:"Mollie", role:"Senior PM, Payments/Checkout", prio:"Высокий", fit:8, stage:"Not started", salary:"€90–120k", next:"", note:"", url:"https://jobs.mollie.com/"},
+  {company:"WalletConnect / Reown", role:"PM, Wallet infra", prio:"Средний", fit:7, stage:"Not started", salary:"€100–140k", next:"", note:"", url:"https://reown.com/careers"},
+  {company:"BVNK", role:"PM, Stablecoin/Payments", prio:"Высокий", fit:8, stage:"Not started", salary:"€95–130k", next:"", note:"", url:"https://www.bvnk.com/careers"},
+  {company:"MoonPay", role:"Senior PM, Payments", prio:"Высокий", fit:8.5, stage:"Not started", salary:"€95–130k", next:"", note:"", url:"https://jobs.lever.co/moonpay"},
+  {company:"Ramp Network", role:"PM, Payments/Ramp", prio:"Средний", fit:8, stage:"Not started", salary:"€90–120k", next:"", note:"", url:"https://ramp.network/careers"},
+  {company:"Bitpanda", role:"Senior PM, Payments/Trading", prio:"Средний", fit:7, stage:"Not started", salary:"€85–115k", next:"", note:"", url:"https://www.bitpanda.com/en/career"},
+  {company:"Ledger", role:"PM, Wallet/Payments", prio:"Средний", fit:6.5, stage:"Not started", salary:"€90–120k", next:"", note:"", url:"https://www.ledger.com/careers"},
+  {company:"Constructor", role:"PM, Connector Integrations platform", prio:"Watch", fit:7.5, stage:"Rejected", salary:"€90–120k", next:"", note:"", url:"https://job-boards.greenhouse.io/constructor"},
+  {company:"INXY Payments", role:"Senior Product Owner", prio:"Watch", fit:9, stage:"Not started", salary:"competitive", next:"", note:"", url:"https://wantapply.com/company/inxy-payments"},
+  {company:"Wallet in Telegram", role:"PM, Customer Support (ops)", prio:"Средний", fit:6, stage:"Not started", salary:"проверить (возм. ниже таргета)", next:"", note:"", url:"https://www.tg-wallet.com/careers"},
+  {company:"N26", role:"Senior PM, Payments Platform (Backend)", prio:"🔥 Высокий", fit:8.5, stage:"Applied", salary:"€90–120k", next:"", note:"", url:"https://n26.com/en-eu/careers/positions/7140089"},
+  {company:"Wise", role:"Senior PM, Servicing Platform", prio:"Высокий", fit:7.5, stage:"Not started", salary:"€90–130k", next:"", note:"", url:"https://www.wise.jobs/"},
+  {company:"Stripe", role:"PM, EMEA Payments Lead", prio:"Высокий", fit:8, stage:"Not started", salary:"€110–150k", next:"", note:"", url:"https://stripe.com/jobs/search"},
+  {company:"Qonto", role:"Senior PM, Connect (API & Integrations)", prio:"🔥 Высокий", fit:8.5, stage:"Applied", salary:"€90–120k", next:"", note:"", url:"https://qonto.com/en/careers"},
+  {company:"Qonto", role:"Senior PM, Savings", prio:"Низкий", fit:6.5, stage:"Not started", salary:"€85–115k", next:"", note:"", url:"https://qonto.com/en/careers"},
+  {company:"Finom", role:"Senior PM, Savings & Investments", prio:"Средний", fit:6, stage:"Not started", salary:"€80–110k", next:"", note:"", url:"https://careers.finom.com/"},
+  {company:"Constructor", role:"PM, Merchant Intelligence", prio:"Средний", fit:7, stage:"Not started", salary:"€90–120k", next:"", note:"", url:"https://job-boards.greenhouse.io/constructor"},
+  {company:"Constructor", role:"PM, Demo Experience", prio:"Средний", fit:6.5, stage:"Not started", salary:"€90–120k", next:"", note:"", url:"https://job-boards.greenhouse.io/constructor"},
+  {company:"GoMining", role:"PM, Payments", prio:"Средний", fit:7.5, stage:"Applied", salary:"⚠️ уточнить вилку (раннее объявление: $3.5–5k/мес — ниже минимума €80k)", next:"", note:"", url:"https://apply.workable.com/gomining/"},
+  {company:"Salmon", role:"TPM, Cards System Analyst", prio:"Высокий", fit:8, stage:"Applied", salary:"проверить", next:"", note:"", url:"https://salmon.ph/careers"},
+  {company:"Salmon", role:"TPM, Reconciliation", prio:"Средний", fit:6.5, stage:"Applied", salary:"проверить", next:"", note:"", url:"https://jobs.ashbyhq.com/salmon-group/ecccd048-5ea9-478e-bdc9-553233e7a69f"},
+  {company:"dLocal", role:"Senior PM, Cross-Border Operations", prio:"🔥 Высокий", fit:7, stage:"Screening", salary:"уточнить", next:"", note:"", url:"https://www.dlocal.com/careers"},
+  {company:"MoonPay", role:"Senior PM, Card Payments & Issuing", prio:"🔥 Высокий", fit:8.5, stage:"Not started", salary:"уточнить (est. €95–130k)", next:"", note:"", url:"https://jobs.lever.co/moonpay/edd83af9-0f56-498a-bfa0-915c9a136001"},
+  {company:"Yuno", role:"Senior PM, MX/DX SDK Team", prio:"Высокий", fit:7.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/yuno/52be3369-2156-48c3-b498-4c37d23e33e2"},
+  {company:"Nuvei", role:"PM, Payment Gateway", prio:"Высокий", fit:7.5, stage:"Not started", salary:"уточнить (est. €85–120k)", next:"", note:"", url:"https://apply.workable.com/nuvei/j/4F4D715492"},
+  {company:"FYST", role:"Senior PM, Integrations (Payments)", prio:"Watch", fit:8.5, stage:"Not started", salary:"€80–120k", next:"", note:"", url:"https://fyst.com/careers"},
+  {company:"BVNK", role:"PM, Billing & Fees", prio:"Средний", fit:6.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://job-boards.eu.greenhouse.io/bvnk/jobs/4875965101"},
+  {company:"MoonPay", role:"PM, Partner", prio:"Средний", fit:7, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/moonpay/e21bd683-a9ad-4e0c-9f0a-b8b7d0ff6e8a"},
+  {company:"Salmon", role:"Senior PM, Cross-Border Payments", prio:"🔥 Высокий", fit:8, stage:"To apply", salary:"уточнить", next:"", note:"", url:"https://salmon-jobs.super.site/senior-product-manager-cross-border-payments"},
+  {company:"Salmon", role:"Operations PM (отклонил)", prio:"Watch", fit:3, stage:"Rejected", salary:"—", next:"", note:"", url:"https://lnkd.in/gd_K9eZE"},
+  {company:"Payrails", role:"Senior PM, Integrations", prio:"🔥 Высокий", fit:9, stage:"Not started", salary:"уточнить (est. €90–130k)", next:"", note:"", url:"https://weworkremotely.com/remote-jobs/payrails-senior-product-manager-integrations"},
+  {company:"Payrails", role:"Senior PM, Payments", prio:"Высокий", fit:8, stage:"Not started", salary:"уточнить (est. €90–130k)", next:"", note:"", url:"https://jobs.ashbyhq.com/payrails/c4048896-5de7-4dfa-8bfb-bd7c9b114287"},
+  {company:"Jeeves", role:"PM, Stablecoin & Digital Assets", prio:"Средний", fit:7, stage:"Not started", salary:"уточнить (est. €90–120k)", next:"", note:"", url:"https://jobs.lever.co/tryjeeves/458f8fa9-ff1b-4cde-a703-61e5832ee756"},
+  {company:"Printify", role:"Senior PM, Payment Orchestration", prio:"Средний", fit:7, stage:"Not started", salary:"уточнить (⚠️ Riga-based — риск ниже €80k)", next:"", note:"", url:"https://startup.jobs/senior-product-manager-payment-orchestration-remote-within-emea-printify-5810650"},
+  {company:"Mollie", role:"Product Manager, Cards", prio:"Средний", fit:6.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.mollie.com/vacancies/4cb442e2-e761-40bf-bb77-57e93b17fca7"},
+  {company:"LearnWorlds", role:"Senior PM, Payments & E-commerce", prio:"Средний", fit:6.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://www.learnworlds.com/job/senior-product-manager-payments-e-commerce-remote-europe/"},
+  {company:"Stripe", role:"PM, Local Payment Methods EMEA", prio:"🔥 Высокий", fit:8.5, stage:"Not started", salary:"€102–154k (официальная вилка)", next:"", note:"", url:"https://stripe.com/jobs/listing/product-manager-local-payment-methods-emea/7486955"},
+  {company:"dLocal", role:"Senior PM, Balance (Barcelona)", prio:"Средний", fit:7, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/dlocal"},
+  {company:"PawaPay", role:"Payments Product Manager", prio:"Средний", fit:7, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://job-boards.eu.greenhouse.io/pawapay/jobs/4836386101"},
+  {company:"FREE NOW", role:"PM, Invoicing & Partner Payments", prio:"Средний", fit:6.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://boards.greenhouse.io/freenow/jobs/3790338"},
+  {company:"Deel", role:"Staff PM — Fintech, Client Experience", prio:"Высокий", fit:7.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.ashbyhq.com/deel/a446c59c-83f8-4034-94e9-baa042884de6"},
+  {company:"dLocal", role:"Lead PM, Core Services Finance", prio:"Средний", fit:6.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/dlocal/cf31b043-a264-4fe9-a4d9-be0de4f75f46"},
+  {company:"Mangopay", role:"PM, Payments Platform", prio:"🔥 Высокий", fit:8, stage:"Not started", salary:"уточнить (est. €80–110k)", next:"", note:"", url:"https://job-boards.eu.greenhouse.io/mangopay/jobs/4821925101"},
+  {company:"Checkout.com", role:"Senior PM, Card Processing", prio:"Средний", fit:7, stage:"Not started", salary:"уточнить (est. €90–130k)", next:"", note:"", url:"https://jobs.ashbyhq.com/checkout.com/12cddf3a-be1f-4d4b-b168-f342406cab50"},
+  {company:"Wise", role:"Senior PM, Europe & UK Pay-in", prio:"Средний", fit:7, stage:"Not started", salary:"£83–110k (est. €97–130k)", next:"", note:"", url:"https://www.wise.jobs/role/4544470-senior-product-manager-europe-uk-pay-in/"},
+  {company:"Bitpanda", role:"Senior PM, Web3", prio:"Средний", fit:6.5, stage:"Not started", salary:"⚠️ уточнить (агрегатор $54–81k — вероятно неточно)", next:"", note:"", url:"https://beincrypto.com/jobs/p/senior-product-manager-web3-spain-bitpanda"},
+  {company:"Yuno", role:"Senior PM, Core Team", prio:"🔥 Высокий", fit:8.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/yuno/08c6d583-5bba-4c56-81c2-9fd9991d7110"},
+  {company:"Primer", role:"PM, Orchestration", prio:"🔥 Высокий", fit:8.5, stage:"Not started", salary:"уточнить (est. €85–120k)", next:"", note:"", url:"https://jobs.ashbyhq.com/primer.io"},
+  {company:"Trustly", role:"Senior PM, FIC (Open Banking Connectors)", prio:"Высокий", fit:7.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/trustly/6ae42bbd-766a-48ee-8d03-bcd1f4ac2504"},
+  {company:"MoonPay", role:"Senior PM, Cards", prio:"Высокий", fit:7.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/moonpay/ba7a2c85-4ddc-4e72-bfc3-0bc7a783d98a"},
+  {company:"Nuvei", role:"Senior PM", prio:"Высокий", fit:7, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://apply.workable.com/nuvei/j/FCE964442A"},
+  {company:"Mollie", role:"PM, Local Payment Methods", prio:"Средний", fit:6.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.mollie.com/vacancies-2/product-manager-local-payment-methods"},
+  {company:"dLocal", role:"Senior PM, Virtual Accounts", prio:"Высокий", fit:7.5, stage:"Not started", salary:"уточнить", next:"", note:"", url:"https://jobs.lever.co/dlocal/82af4022-3088-4513-b540-289a13ce2e9f"}
 ];
 
-const KEY = "mark_job_tracker_v25";
+const KEY = "mark_job_tracker_public_v1";
 let data = load();
-let sortKey = null, sortDir = 1;
 
-function load(){
-  try { const s = localStorage.getItem(KEY); if(s) return JSON.parse(s); } catch(e){}
-  return JSON.parse(JSON.stringify(SEED));
-}
+function load(){ try { const s = localStorage.getItem(KEY); if(s) return JSON.parse(s); } catch(e){} return JSON.parse(JSON.stringify(SEED)); }
 function save(){ localStorage.setItem(KEY, JSON.stringify(data)); }
 
-function fitColor(f){
-  if(f >= 8.5) return "#86efac";
-  if(f >= 7.5) return "#bbf7d0";
-  if(f >= 7)   return "#fde68a";
-  return "#fed7aa";
-}
+let sortKey = null, sortDir = 1;
 
-function esc(s){
-  return String(s == null ? "" : s)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-
-function getView(){
-  const q  = document.getElementById("search").value.toLowerCase();
-  const fS = document.getElementById("filterStage").value;
-  const fP = document.getElementById("filterPrio").value;
-  let view = data.map((d,i) => ({d,i}));
-  if(q)  view = view.filter(x => (x.d.company + " " + x.d.role).toLowerCase().includes(q));
-  if(fS) view = view.filter(x => x.d.stage === fS);
-  if(fP) view = view.filter(x => x.d.prio === fP);
-  if(sortKey) view.sort((a,b) => {
-    let va = a.d[sortKey], vb = b.d[sortKey];
-    if(typeof va === "number") return (va - vb) * sortDir;
-    return String(va).localeCompare(String(vb)) * sortDir;
-  });
-  return view;
-}
+function fitColor(f){ if(f>=8) return "#bbf7d0"; if(f>=7) return "#fde68a"; return "#fed7aa"; }
 
 function renderStats(){
-  const counts = {};
-  STAGES.forEach(s => counts[s] = 0);
-  data.forEach(d => counts[d.stage] = (counts[d.stage]||0) + 1);
-  const active = data.filter(d => ["Applied","Screening","Interview"].includes(d.stage)).length;
+  const el = document.getElementById("stats");
+  const counts = {}; STAGES.forEach(s=>counts[s]=0);
+  data.forEach(d=>counts[d.stage]=(counts[d.stage]||0)+1);
+  const active = data.filter(d=>["Applied","Screening","Interview"].includes(d.stage)).length;
   let html = `<div class="stat"><div class="n">${data.length}</div><div class="l">Всего</div></div>`;
   html += `<div class="stat"><div class="n">${active}</div><div class="l">В работе</div></div>`;
-  ["To apply","Applied","Screening","Interview","Offer","Rejected"].forEach(s => {
+  ["To apply","Applied","Screening","Interview","Offer","Rejected"].forEach(s=>{
     html += `<div class="stat"><div class="n">${counts[s]||0}</div><div class="l">${s}</div></div>`;
   });
-  document.getElementById("stats").innerHTML = html;
+  el.innerHTML = html;
 }
 
-function renderTable(view){
-  document.getElementById("rows").innerHTML = view.map(({d,i}) => {
-    const stageOpts = STAGES.map(s => `<option ${s===d.stage?"selected":""}>${s}</option>`).join("");
-    const prioOpts  = PRIOS.map(p  => `<option ${p===d.prio ?"selected":""}>${p}</option>`).join("");
-    return `<tr>
-      <td class="co">${esc(d.company)}</td>
-      <td>${d.url?`<a class="lnk" href="${esc(d.url)}" target="_blank" rel="noopener">↗</a>`:""}</td>
-      <td class="role">${esc(d.role)}</td>
-      <td><select class="prio-sel" data-i="${i}" style="background:${PRIO_C[d.prio]||'#fff'}">${prioOpts}</select></td>
-      <td><span class="fit-badge" style="background:${fitColor(d.fit)}">${d.fit}</span></td>
-      <td><select class="stage-sel" data-i="${i}" style="background:${STAGE_C[d.stage]||'#fff'}">${stageOpts}</select></td>
-      <td class="salary">${esc(d.salary)}</td>
-      <td><input class="editable next-inp" data-i="${i}" value="${esc(d.next)}" placeholder="—"></td>
-      <td><input class="editable note-inp" data-i="${i}" value="${esc(d.note)}" placeholder="—"></td>
-      <td><button class="del" data-i="${i}">×</button></td>
-    </tr>`;
-  }).join("");
-}
-
-function renderCards(view){
-  document.getElementById("cards").innerHTML = view.map(({d,i}) => {
-    const stageOpts = STAGES.map(s => `<option ${s===d.stage?"selected":""}>${s}</option>`).join("");
-    const prioOpts  = PRIOS.map(p  => `<option ${p===d.prio ?"selected":""}>${p}</option>`).join("");
-    const hasNote = d.note && d.note.trim();
-    return `<div class="card">
-      <div class="card-top">
-        <div class="card-info">
-          <div class="card-company">
-            ${esc(d.company)}
-            ${d.url?`<a class="lnk" href="${esc(d.url)}" target="_blank" rel="noopener">↗</a>`:""}
-          </div>
-          <div class="card-role">${esc(d.role)}</div>
-        </div>
-        <span class="fit-badge" style="background:${fitColor(d.fit)};flex-shrink:0">${d.fit}</span>
-      </div>
-      <div class="card-selects">
-        <select class="stage-sel" data-i="${i}" style="background:${STAGE_C[d.stage]||'#fff'}">${stageOpts}</select>
-        <select class="prio-sel" data-i="${i}" style="background:${PRIO_C[d.prio]||'#fff'}">${prioOpts}</select>
-      </div>
-      <div class="card-field">
-        <label>Next action</label>
-        <input class="next-inp" data-i="${i}" value="${esc(d.next)}" placeholder="—">
-      </div>
-      <div class="card-footer">
-        <span class="card-salary">${esc(d.salary)}</span>
-        <div class="card-actions">
-          ${hasNote?`<button class="note-toggle">Заметки</button>`:""}
-          <button class="del" data-i="${i}">×</button>
-        </div>
-      </div>
-      ${hasNote?`<div class="note-body"><input class="note-inp" data-i="${i}" value="${esc(d.note)}"></div>`:""}
-    </div>`;
-  }).join("");
-}
-
-function render(){
-  const view = getView();
-  renderStats();
-  renderTable(view);
-  renderCards(view);
-  document.querySelectorAll("th[data-sort]").forEach(th => {
-    th.classList.remove("asc","desc");
-    if(th.dataset.sort === sortKey) th.classList.add(sortDir === 1 ? "asc" : "desc");
-  });
-}
-
-// Event delegation
-document.addEventListener("change", e => {
-  const el = e.target, i = +el.dataset.i;
-  if(isNaN(i)) return;
-  if(el.classList.contains("stage-sel"))     { data[i].stage = el.value; save(); render(); }
-  else if(el.classList.contains("prio-sel")) { data[i].prio  = el.value; save(); render(); }
-  else if(el.classList.contains("next-inp")) { data[i].next  = el.value; save(); }
-  else if(el.classList.contains("note-inp")) { data[i].note  = el.value; save(); }
-});
-
-document.addEventListener("click", e => {
-  if(e.target.classList.contains("del")){
-    const i = +e.target.dataset.i;
-    if(confirm("Удалить строку?")){ data.splice(i,1); save(); render(); }
-  }
-  if(e.target.classList.contains("note-toggle")){
-    const body = e.target.closest(".card").querySelector(".note-body");
-    if(!body) return;
-    body.classList.toggle("open");
-    e.target.textContent = body.classList.contains("open") ? "Скрыть" : "Заметки";
-  }
-});
-
-// Sort
-document.querySelectorAll("th[data-sort]").forEach(th => th.onclick = () => {
-  const k = th.dataset.sort;
-  sortKey === k ? sortDir *= -1 : (sortKey = k, sortDir = 1);
-  render();
-});
-
-// Toolbar
-document.getElementById("search").addEventListener("input", render);
-document.getElementById("filterStage").addEventListener("change", render);
-document.getElementById("filterPrio").addEventListener("change", render);
-document.getElementById("addBtn").onclick = () => {
-  data.unshift({company:"Новая компания",role:"Senior PM",prio:"Средний",fit:7,stage:"Not started",salary:"уточнить",next:"",note:"",url:""});
-  save(); render();
-};
-document.getElementById("resetBtn").onclick = () => {
-  if(confirm("Сбросить все изменения к исходным данным?")){
-    data = JSON.parse(JSON.stringify(SEED)); save(); render();
-  }
-};
-
-// Init filters
-(function(){
+function fillFilters(){
   const fs = document.getElementById("filterStage");
-  STAGES.forEach(s => { const o=document.createElement("option"); o.value=s; o.textContent=s; fs.appendChild(o); });
+  STAGES.forEach(s=>{ const o=document.createElement("option"); o.value=s; o.textContent=s; fs.appendChild(o); });
   const fp = document.getElementById("filterPrio");
-  PRIOS.forEach(p => { const o=document.createElement("option"); o.value=p; o.textContent=p; fp.appendChild(o); });
-})();
+  PRIOS.forEach(p=>{ const o=document.createElement("option"); o.value=p; o.textContent=p; fp.appendChild(o); });
+}
 
-render();
+function renderRows(){
+  const tbody = document.getElementById("rows");
+  const q = document.getElementById("search").value.toLowerCase();
+  const fStage = document.getElementById("filterStage").value;
+  const fPrio = document.getElementById("filterPrio").value;
+  let view = data.map((d,i)=>({d,i}));
+  if(q) view = view.filter(x=>(x.d.company+" "+x.d.role).toLowerCase().includes(q));
+  if(fStage) view = view.filter(x=>x.d.stage===fStage);
+  if(fPrio) view = view.filter(x=>x.d.prio===fPrio);
+  if(sortKey) view.sort((a,b)=>{ let va=a.d[sortKey], vb=b.d[sortKey]; if(typeof va==="number") return (va-vb)*sortDir; return String(va).localeCompare(String(vb))*sortDir; });
+  tbody.innerHTML = "";
+  view.forEach(({d,i})=>{
+    const tr = document.createElement("tr");
+    const stageOpts = STAGES.map(s=>`<option ${s===d.stage?"selected":""}>${s}</option>`).join("");
+    const prioOpts = PRIOS.map(p=>`<option ${p===d.prio?"selected":""}>${p}</option>`).join("");
+    tr.innerHTML = `
+      <td class="company">${esc(d.company)}</td>
+      <td>${d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.url)}" style="text-decoration:none;font-size:16px;">↗</a>`:""}</td>
+      <td class="role">${esc(d.role)}</td>
+      <td><select class="prio" data-i="${i}" style="background:${PRIO_COLORS[d.prio]||'#fff'}">${prioOpts}</select></td>
+      <td><span class="fit" style="background:${fitColor(d.fit)}">${d.fit}</span></td>
+      <td><select class="stage" data-i="${i}" style="background:${STAGE_COLORS[d.stage]||'#fff'}">${stageOpts}</select></td>
+      <td class="salary">${esc(d.salary)}</td>
+      <td><button class="del" data-i="${i}" title="Удалить">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  bind();
+}
+
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function bind(){
+  document.querySelectorAll("select.stage").forEach(el=>el.onchange=e=>{ data[+e.target.dataset.i].stage=e.target.value; save(); renderStats(); renderRows(); });
+  document.querySelectorAll("select.prio").forEach(el=>el.onchange=e=>{ data[+e.target.dataset.i].prio=e.target.value; save(); renderRows(); });
+  document.querySelectorAll("input.next").forEach(el=>el.onchange=e=>{ data[+e.target.dataset.i].next=e.target.value; save(); });
+  document.querySelectorAll("input.note").forEach(el=>el.onchange=e=>{ data[+e.target.dataset.i].note=e.target.value; save(); });
+  document.querySelectorAll(".del").forEach(el=>el.onclick=e=>{ if(confirm("Удалить строку?")){ data.splice(+e.target.dataset.i,1); save(); renderStats(); renderRows(); } });
+}
+
+document.getElementById("search").oninput = renderRows;
+document.getElementById("filterStage").onchange = renderRows;
+document.getElementById("filterPrio").onchange = renderRows;
+document.getElementById("addBtn").onclick = ()=>{ data.unshift({company:"Новая компания",role:"Senior PM",prio:"Средний",fit:7,stage:"Not started",salary:"€90–120k",next:"",note:""}); save(); renderStats(); renderRows(); };
+document.getElementById("resetBtn").onclick = ()=>{ if(confirm("Сбросить все изменения к исходным 16 компаниям?")){ data = JSON.parse(JSON.stringify(SEED)); save(); renderStats(); renderRows(); } };
+document.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{ const k=th.dataset.sort; if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=1; } renderRows(); });
+
+fillFilters();
+renderStats();
+renderRows();
 </script>
 </body>
 </html>
