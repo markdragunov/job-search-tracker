@@ -26,7 +26,7 @@ body { min-width: 720px; background: var(--bg); color: var(--text);
 .topbar-right { display: flex; align-items: center; gap: 8px; }
 .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .view-btn { padding: 5px 11px; font-size: 12px; font-weight: 500; cursor: pointer;
-  background: var(--bg); color: var(--muted); border: none; transition: background .15s; }
+  background: var(--bg); color: var(--muted); border: none; transition: background .15s; white-space: nowrap; }
 .view-btn.active { background: var(--surface); color: var(--text); }
 .funnel-toggle-btn { padding: 5px 10px; font-size: 12px; font-weight: 500; cursor: pointer;
   background: var(--bg); color: var(--muted); border: 1px solid var(--border);
@@ -80,6 +80,10 @@ body { min-width: 720px; background: var(--bg); color: var(--text);
   color: var(--text); width: 100%; font-family: inherit; }
 .toolbar select { padding: 7px 10px; border: 1px solid var(--border);
   border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text); cursor: pointer; }
+.active-only-btn { padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  color: var(--muted); white-space: nowrap; transition: background .15s; }
+.active-only-btn.on { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
 .clear-btn { padding: 6px 12px; font-size: 12px; border: 1px solid var(--border);
   border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; display: none; }
 .clear-btn.visible { display: block; }
@@ -98,6 +102,17 @@ tbody tr { border-bottom: 1px solid var(--border-light); }
 tbody tr:hover td { background: #fafbfc; }
 tbody td { padding: 0; vertical-align: middle; }
 
+/* DIM inactive rows */
+tbody tr.row-dim { opacity: 0.38; }
+tbody tr.row-dim:hover { opacity: 0.7; }
+tbody tr.row-dim .co-name { text-decoration: line-through; text-decoration-color: #9ca3af; }
+
+/* GROUP separator */
+tr.group-sep td { padding: 6px 12px 4px; background: var(--bg); border-bottom: none; }
+tr.group-sep .group-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; display: flex; align-items: center; gap: 6px; }
+tr.group-sep .group-count { font-size: 10px; color: var(--muted); font-weight: 400; }
+
 /* Row accent bar */
 .row-bar { width: 4px; height: 100%; min-height: 46px; }
 
@@ -107,26 +122,29 @@ tbody td { padding: 0; vertical-align: middle; }
   font-size: 11px; font-weight: 700; flex-shrink: 0; letter-spacing: -0.02em; }
 .co-name { font-size: 13px; font-weight: 600; }
 .co-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Note — hidden until row hover */
 .co-note { font-size: 11px; color: #9ca3af; margin-top: 3px; min-height: 14px;
-  cursor: text; border-bottom: 1px dashed transparent; transition: border-color .15s; }
-.co-note:hover { border-color: #d1d5db; color: var(--muted); }
-.co-note:empty::before { content: attr(data-ph); color: #d1d5db; }
+  cursor: text; border-bottom: 1px dashed transparent; transition: border-color .15s, color .15s; }
+.co-note:hover { border-color: #d1d5db; }
+.co-note:empty::before { content: attr(data-ph); color: transparent; transition: color .15s; }
+tbody tr:hover .co-note:empty::before { color: #d1d5db; }
 .note-input { font-size: 11px; color: var(--text); font-family: inherit;
   border: none; border-bottom: 1px solid var(--blue); outline: none;
   background: transparent; width: 100%; padding: 0; }
 .co-added { font-size: 10px; color: #c4c9d4; margin-top: 2px; }
 
-/* Priority cell */
+/* Fit badge */
+.fit-sq { width: 34px; height: 34px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+
+/* Priority cell — hidden until row hover */
 .prio-cell { font-size: 13px; cursor: pointer; padding: 4px 2px; border-radius: 6px;
   user-select: none; text-align: center; line-height: 1.2; transition: background .15s;
   white-space: nowrap; }
 .prio-cell:hover { background: var(--bg); }
-.prio-cell.empty { font-size: 16px; color: #e5e7eb; }
-.prio-cell.empty:hover { color: #d1d5db; }
-
-/* Fit badge */
-.fit-sq { width: 34px; height: 34px; border-radius: 8px; display: flex;
-  align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.prio-cell.empty { font-size: 16px; opacity: 0; transition: opacity .15s; }
+tbody tr:hover .prio-cell.empty { opacity: 1; color: #d1d5db; }
 
 /* Stage select + days badge */
 .stage-wrap { display: flex; flex-direction: column; gap: 3px; }
@@ -141,19 +159,27 @@ tbody td { padding: 0; vertical-align: middle; }
 .days-badge.stale .days-num { color: #f59e0b; }
 .days-badge.overdue .days-num { color: #ef4444; }
 
-/* Date follow-up */
-.date-inp { font-size: 11px; color: var(--muted); border: none;
-  background: transparent; font-family: inherit; cursor: pointer;
-  padding: 3px 4px; border-radius: 6px; border: 1px solid transparent; }
-.date-inp:hover { border-color: var(--border); background: var(--bg); }
-.date-inp:focus { outline: none; border-color: var(--blue); background: var(--surface); }
-.date-inp.has-date { color: var(--text); }
-.date-inp.overdue-date { color: #dc2626; }
+/* Date follow-up — hidden until row hover, colored when set */
+.date-inp { font-size: 11px; border: none; background: transparent;
+  font-family: inherit; cursor: pointer; padding: 3px 4px; border-radius: 6px;
+  border: 1px solid transparent; transition: opacity .15s; }
+.date-inp:not(.has-date) { opacity: 0; }
+tbody tr:hover .date-inp:not(.has-date) { opacity: 0.5; }
+.date-inp.has-date { opacity: 1; color: var(--text); }
+.date-inp:hover { border-color: var(--border); background: var(--bg); opacity: 1 !important; }
+.date-inp:focus { outline: none; border-color: var(--blue); background: var(--surface); opacity: 1 !important; }
+
+/* Follow-up color states */
+.fu-overdue { color: #dc2626 !important; font-weight: 600; }
+.fu-today   { color: #ea580c !important; font-weight: 600; }
+.fu-tomorrow{ color: #ca8a04 !important; }
+.fu-future  { color: var(--text) !important; }
 
 .salary-cell { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .lnk { text-decoration: none; font-size: 15px; color: #d1d5db; padding: 2px 6px;
   border-radius: 5px; }
 .lnk:hover { color: var(--blue); background: var(--blue-light); }
+tbody tr:hover .lnk { color: #9ca3af; }
 
 /* Toast */
 .toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: #fff;
@@ -164,6 +190,39 @@ tbody td { padding: 0; vertical-align: middle; }
 
 /* Loading */
 .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+/* FOCUS VIEW */
+.focus-view { display: none; padding: 16px 20px; }
+.focus-view.show { display: block; }
+.focus-section { margin-bottom: 20px; }
+.focus-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.focus-section-title { font-size: 13px; font-weight: 700; }
+.focus-section-count { font-size: 11px; color: var(--muted);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 999px; padding: 1px 8px; }
+.focus-empty { font-size: 12px; color: #d1d5db; padding: 8px 0; }
+.focus-card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 12px; }
+.focus-card:hover { border-color: #c4b5fd; }
+.focus-card-main { flex: 1; min-width: 0; }
+.focus-card-co { font-size: 13px; font-weight: 600; }
+.focus-card-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.focus-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.focus-badge { font-size: 10px; padding: 2px 7px; border-radius: 999px;
+  font-weight: 600; white-space: nowrap; }
+.focus-days { font-size: 11px; color: var(--muted); }
+.focus-card-fit { width: 30px; height: 30px; border-radius: 7px; display: flex;
+  align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.focus-card-link { font-size: 14px; color: #d1d5db; text-decoration: none;
+  padding: 3px 6px; border-radius: 5px; flex-shrink: 0; }
+.focus-card-link:hover { color: var(--blue); background: var(--blue-light); }
+.focus-fu-badge { font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 999px; white-space: nowrap; }
+.focus-fu-overdue { background: #fee2e2; color: #991b1b; }
+.focus-fu-today   { background: #ffedd5; color: #9a3412; }
+.focus-fu-tomorrow{ background: #fef9c3; color: #854d0e; }
 
 /* KANBAN */
 .kanban-view { display: none; overflow-x: auto; padding: 16px 20px; gap: 10px; }
@@ -205,8 +264,9 @@ tbody td { padding: 0; vertical-align: middle; }
   <div class="topbar-right">
     <button class="funnel-toggle-btn" id="funnelToggleBtn" onclick="toggleFunnel()">📊 Funnel</button>
     <div class="view-toggle">
-      <button class="view-btn active" id="btnTable" onclick="setView('table')">☰ Table</button>
-      <button class="view-btn" id="btnKanban" onclick="setView('kanban')">⊞ Kanban</button>
+      <button class="view-btn active" id="btnTable"  onclick="setView('table')">☰ Table</button>
+      <button class="view-btn"        id="btnFocus"  onclick="setView('focus')">⚡ Focus</button>
+      <button class="view-btn"        id="btnKanban" onclick="setView('kanban')">⊞ Kanban</button>
     </div>
   </div>
 </header>
@@ -222,6 +282,7 @@ tbody td { padding: 0; vertical-align: middle; }
     <input id="search" type="text" placeholder="Search company or role…">
   </div>
   <select id="filterStage"><option value="">All stages</option></select>
+  <button class="active-only-btn" id="activeOnlyBtn" onclick="toggleActiveOnly()">⚡ Active only</button>
   <button class="clear-btn" id="clearBtn" onclick="clearFilters()">✕ Clear</button>
 </div>
 
@@ -233,12 +294,12 @@ tbody td { padding: 0; vertical-align: middle; }
         <th style="width:4px; padding:0; cursor:default;"></th>
         <th style="width:44px; cursor:default;"></th>
         <th data-sort="company">Company / Role</th>
-        <th data-sort="prio" style="width:60px;">Prio</th>
-        <th data-sort="fit" style="width:52px;">Fit</th>
-        <th data-sort="stage" style="width:150px;">Stage</th>
+        <th data-sort="stage"  style="width:150px;">Stage</th>
+        <th style="width:110px; cursor:default;">Follow-up</th>
+        <th data-sort="fit"    style="width:52px;">Fit</th>
+        <th data-sort="prio"   style="width:60px;">Prio</th>
         <th data-sort="salary" style="width:90px;">Salary</th>
         <th data-sort="date_added" style="width:70px;">Added</th>
-        <th style="width:110px; cursor:default;">Follow-up</th>
         <th style="width:32px; cursor:default;"></th>
       </tr>
     </thead>
@@ -246,6 +307,7 @@ tbody td { padding: 0; vertical-align: middle; }
   </table>
 </div>
 
+<div class="focus-view" id="focusView"></div>
 <div class="kanban-view" id="kanbanView"></div>
 
 <p class="foot">mark-d.dev · Job Tracker · 2026</p>
@@ -270,11 +332,10 @@ const STAGE_ACCENT = {
 };
 const STAGES_ORDER = {"NEW":0,"To apply":1,"Applied":2,"Screening":3,"Interview":4,"Offer":5,"Rejected":6,"Closed":7};
 const ICONS = {"NEW":"✦","To apply":"→","Applied":"✉","Screening":"◎","Interview":"◈","Offer":"★","Rejected":"✕","Closed":"○"};
-
-// Funnel key stages
 const FUNNEL_STAGES = ["Applied","Screening","Interview","Offer"];
+const ACTIVE_STAGES = new Set(["To apply","Applied","Screening","Interview","Offer"]);
+const DIM_STAGES   = new Set(["Rejected","Closed"]);
 
-// Priority levels
 const PRIO_LEVELS = [
   { val: 3, emoji: "❤️‍🔥❤️‍🔥❤️‍🔥", label: "СУПЕРХОТ" },
   { val: 2, emoji: "🔥🔥🔥",       label: "ВЫСОКИЙ"  },
@@ -319,9 +380,19 @@ function isoToDateInput(iso) {
   if (!iso) return '';
   try { return new Date(iso).toISOString().split('T')[0]; } catch(e) { return ''; }
 }
-function isOverdue(dateStr) {
-  if (!dateStr) return false;
-  return new Date(dateStr) < new Date(new Date().toDateString());
+// Returns: 'overdue' | 'today' | 'tomorrow' | 'future' | null
+function followUpStatus(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const diff = Math.floor((d - today) / 86400000);
+  if (diff < 0)  return 'overdue';
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  return 'future';
+}
+function followUpLabel(status) {
+  return { overdue:'Просрочен', today:'Сегодня', tomorrow:'Завтра', future:'' }[status] || '';
 }
 
 let DATA = [];
@@ -329,6 +400,7 @@ let sortKey = "fit", sortDir = -1;
 let activeStageFilter = "";
 let currentView = "table";
 let funnelVisible = false;
+let activeOnly = false;
 
 /* ── FETCH ── */
 async function loadJobs() {
@@ -376,14 +448,11 @@ async function changeStage(selectEl, company, role) {
     });
     if (!r.ok) throw new Error(r.status);
     const job = DATA.find(j => j.company === company && j.role === role);
-    if (job) {
-      job.stage = newStage;
-      job.stage_updated_at = new Date().toISOString();
-    }
+    if (job) { job.stage = newStage; job.stage_updated_at = new Date().toISOString(); }
     showToast(`${company} → ${newStage}`);
     render();
   } catch(e) {
-    showToast("Error saving — check console", true);
+    showToast("Error saving", true);
     selectEl.value = DATA.find(j=>j.company===company&&j.role===role)?.stage || "";
   } finally {
     selectEl.classList.remove("saving");
@@ -393,7 +462,6 @@ async function changeStage(selectEl, company, role) {
 /* ── CYCLE PRIORITY ── */
 async function cyclePrio(el, company, role) {
   const cur = el.dataset.prio === "null" ? null : parseInt(el.dataset.prio);
-  // cycle: null → 3 → 2 → 1 → 0 → null
   let next;
   if (cur === null) next = 3;
   else if (cur === 0) next = null;
@@ -411,11 +479,9 @@ async function cyclePrio(el, company, role) {
     el.classList.add("empty");
     el.dataset.prio = "null";
   }
-
   const job = DATA.find(j => j.company === company && j.role === role);
   if (job) job.prio = next;
   await saveField(company, role, "prio", next);
-  renderPipeline(); // refresh funnel counts if needed
 }
 
 /* ── NOTE EDIT ── */
@@ -427,30 +493,28 @@ function editNote(el) {
   el.innerHTML = `<input class="note-input" value="${esc(current)}" placeholder="add note…" maxlength="200">`;
   const input = el.querySelector("input");
   input.focus(); input.select();
-
   async function commit() {
     const val = input.value.trim();
     el.textContent = val;
-    el.dataset.ph = "add note…";
     await saveField(company, role, "note", val);
   }
   input.onblur = commit;
   input.onkeydown = e => {
     if (e.key === "Enter") { e.preventDefault(); input.blur(); }
-    if (e.key === "Escape") {
-      el.textContent = current;
-      el.dataset.ph = "add note…";
-    }
+    if (e.key === "Escape") { el.textContent = current; }
   };
 }
 
-/* ── DATE UPDATE CHANGE ── */
+/* ── DATE UPDATE ── */
 async function changeDateUpdate(inputEl, company, role) {
-  const val = inputEl.value; // yyyy-mm-dd or ""
+  const val = inputEl.value;
+  const status = followUpStatus(val);
   inputEl.classList.toggle("has-date", !!val);
-  inputEl.classList.toggle("overdue-date", isOverdue(val));
+  inputEl.className = inputEl.className.replace(/\s*fu-\w+/g, '');
+  if (val && status) inputEl.classList.add(`fu-${status}`);
   await saveField(company, role, "date_update", val);
-  showToast(val ? `Follow-up set: ${val}` : "Follow-up cleared");
+  showToast(val ? `Follow-up: ${val}` : "Follow-up cleared");
+  if (currentView === "focus") render();
 }
 
 /* ── TOAST ── */
@@ -469,8 +533,9 @@ function getView() {
   const q = document.getElementById("search").value.toLowerCase();
   const fS = document.getElementById("filterStage").value;
   let view = DATA.map((d,i)=>({d,i}));
-  if(q)  view = view.filter(x=>(x.d.company+" "+x.d.role).toLowerCase().includes(q));
-  if(fS) view = view.filter(x=>x.d.stage===fS);
+  if(q)          view = view.filter(x=>(x.d.company+" "+x.d.role).toLowerCase().includes(q));
+  if(fS)         view = view.filter(x=>x.d.stage===fS);
+  if(activeOnly) view = view.filter(x=>ACTIVE_STAGES.has(x.d.stage));
   view.sort((a,b)=>{
     let va=a.d[sortKey], vb=b.d[sortKey];
     if(sortKey==="stage"){va=STAGES_ORDER[va]??99;vb=STAGES_ORDER[vb]??99;}
@@ -498,43 +563,30 @@ function renderPipeline() {
       <div class="pn">${counts[s]}</div><div class="pl">${s}</div></div>`;
   });
   pip.innerHTML = html;
-
-  // Funnel
   if (funnelVisible) renderFunnel(counts);
 }
 
 function renderFunnel(counts) {
   const row = document.getElementById("funnelRow");
   if (!funnelVisible) { row.classList.remove("show"); return; }
-
-  // Count jobs that ever reached each funnel stage (cumulative: stage >= X)
-  // We use current snapshot counts from KV
   const stageIdx = s => STAGES_ORDER[s] ?? 99;
-  const funnelCounts = FUNNEL_STAGES.map(s => {
-    return DATA.filter(j => stageIdx(j.stage) >= stageIdx(s) && j.stage !== "Rejected" && j.stage !== "Closed").length;
-  });
-
+  const funnelCounts = FUNNEL_STAGES.map(s =>
+    DATA.filter(j => stageIdx(j.stage) >= stageIdx(s) && j.stage !== "Rejected" && j.stage !== "Closed").length
+  );
   let html = "";
   FUNNEL_STAGES.forEach((s, i) => {
     const n = funnelCounts[i];
-    const [, tc] = [STAGE_C[s], STAGE_TC[s]];
-    html += `<div class="f-step">
-      <div class="f-step-num" style="color:${tc||'var(--text)'};">${n}</div>
-      <div class="f-step-label">${s}</div>
-    </div>`;
+    const tc = STAGE_TC[s] || 'var(--text)';
+    html += `<div class="f-step"><div class="f-step-num" style="color:${tc};">${n}</div><div class="f-step-label">${s}</div></div>`;
     if (i < FUNNEL_STAGES.length - 1) {
       const next = funnelCounts[i+1];
       const pct = n > 0 ? Math.round(next/n*100) : 0;
       const pctCls = pct >= 50 ? "good" : pct >= 25 ? "mid" : "low";
-      html += `<div class="f-arrow">
-        <div class="f-arrow-line">→</div>
-        <div class="f-arrow-pct ${pctCls}">${pct}%</div>
-      </div>`;
+      html += `<div class="f-arrow"><div class="f-arrow-line">→</div><div class="f-arrow-pct ${pctCls}">${pct}%</div></div>`;
     }
   });
   row.innerHTML = html;
   row.classList.add("show");
-  // Recalculate sticky offsets because funnel row changed height
   setTimeout(stickyFix, 0);
 }
 
@@ -542,11 +594,15 @@ function toggleFunnel() {
   funnelVisible = !funnelVisible;
   document.getElementById("funnelToggleBtn").classList.toggle("active", funnelVisible);
   const row = document.getElementById("funnelRow");
-  if (!funnelVisible) {
-    row.classList.remove("show");
-    row.innerHTML = "";
-    setTimeout(stickyFix, 0);
-  }
+  if (!funnelVisible) { row.classList.remove("show"); row.innerHTML = ""; setTimeout(stickyFix, 0); }
+  render();
+}
+
+/* ── ACTIVE ONLY ── */
+function toggleActiveOnly() {
+  activeOnly = !activeOnly;
+  document.getElementById("activeOnlyBtn").classList.toggle("on", activeOnly);
+  updateClearBtn();
   render();
 }
 
@@ -559,85 +615,195 @@ function setStageFilter(s){
 function clearFilters(){
   document.getElementById("search").value="";
   activeStageFilter="";
+  activeOnly=false;
   document.getElementById("filterStage").value="";
+  document.getElementById("activeOnlyBtn").classList.remove("on");
   updateClearBtn();
   render();
 }
 function updateClearBtn(){
   document.getElementById("clearBtn").classList.toggle("visible",
-    !!(document.getElementById("search").value||activeStageFilter));
+    !!(document.getElementById("search").value || activeStageFilter || activeOnly));
 }
 
-/* ── TABLE ── */
+/* ── TABLE (with Applied grouping) ── */
 function renderTable(view) {
-  document.getElementById("rows").innerHTML = view.map(({d})=>{
-    const [fb,ft]=fitBg(d.fit);
-    const [ab,at]=avColor(d.company);
-    const av=avInitials(d.company);
-    const link=d.url?`<a class="lnk" href="${esc(d.url)}" target="_blank" rel="noopener">↗</a>`:"";
-    const opts=STAGES.map(s=>`<option value="${s}"${s===d.stage?" selected":""}>${ICONS[s]||""} ${s}</option>`).join("");
-    const bg=STAGE_C[d.stage]||"#f3f4f6";
-    const tc=STAGE_TC[d.stage]||"#374151";
+  const isAppliedView = view.every(({d}) => d.stage === "Applied") && view.length > 3;
 
-    // Days in stage badge
-    const dis = daysInStage(d);
-    let daysBadge = "";
-    if (dis !== null) {
-      const disClass = dis > 14 ? "overdue" : dis > 7 ? "stale" : "";
-      daysBadge = `<div class="days-badge ${disClass}">
-        <span class="days-num">${dis}d</span><span style="font-size:9px;color:#c4c9d4;">in stage</span>
-      </div>`;
+  // Group Applied rows if showing mostly Applied
+  let rows = "";
+  if (isAppliedView) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const groups = [
+      { key:'fresh',   label:'🌱 Свежие',       color:'#16a34a', items:[], test: d => daysSince(d) < 7  },
+      { key:'waiting', label:'⏳ Жду ответа',    color:'#ca8a04', items:[], test: d => daysSince(d) >= 7 && daysSince(d) <= 21 },
+      { key:'quiet',   label:'💤 Стало тихо',   color:'#dc2626', items:[], test: d => daysSince(d) > 21  },
+    ];
+    function daysSince(d) {
+      const ref = d.stage_updated_at || d.date_added;
+      if (!ref) return 999;
+      return Math.floor((Date.now() - new Date(ref)) / 86400000);
     }
+    view.forEach(({d}) => {
+      const g = groups.find(g => g.test(d));
+      if (g) g.items.push(d);
+    });
+    groups.forEach(g => {
+      if (!g.items.length) return;
+      rows += `<tr class="group-sep"><td colspan="10"><div class="group-label" style="color:${g.color};">
+        ${g.label} <span class="group-count">${g.items.length}</span></div></td></tr>`;
+      g.items.forEach(d => { rows += rowHtml(d); });
+    });
+  } else {
+    view.forEach(({d}) => { rows += rowHtml(d); });
+  }
+  document.getElementById("rows").innerHTML = rows;
+}
 
-    // Prio cell
+function rowHtml(d) {
+  const [fb,ft]=fitBg(d.fit);
+  const [ab,at]=avColor(d.company);
+  const av=avInitials(d.company);
+  const link=d.url?`<a class="lnk" href="${esc(d.url)}" target="_blank" rel="noopener">↗</a>`:"";
+  const opts=STAGES.map(s=>`<option value="${s}"${s===d.stage?" selected":""}>${ICONS[s]||""} ${s}</option>`).join("");
+  const bg=STAGE_C[d.stage]||"#f3f4f6";
+  const tc=STAGE_TC[d.stage]||"#374151";
+
+  // Days in stage — only show when > 0 and stage is active
+  const dis = daysInStage(d);
+  let daysBadge = "";
+  const showDays = dis !== null && dis > 0 && !DIM_STAGES.has(d.stage) && d.stage !== "NEW";
+  if (showDays) {
+    const disClass = dis > 14 ? "overdue" : dis > 7 ? "stale" : "";
+    daysBadge = `<div class="days-badge ${disClass}"><span class="days-num">${dis}d</span><span style="font-size:9px;color:#c4c9d4;"> in stage</span></div>`;
+  }
+
+  // Note
+  const noteVal = d.note || "";
+  const noteHtml = `<div class="co-note" data-co="${esc(d.company)}" data-role="${esc(d.role)}" data-ph="add note…" onclick="editNote(this)">${esc(noteVal)}</div>`;
+
+  // Follow-up
+  const dateVal = isoToDateInput(d.date_update) || d.date_update || "";
+  const fuStatus = followUpStatus(dateVal);
+  const fuCls = "date-inp" + (dateVal ? " has-date" : "") + (fuStatus ? ` fu-${fuStatus}` : "");
+
+  // Prio
+  const pi = prioInfo(d.prio);
+  const prioCell = pi
+    ? `<div class="prio-cell" title="${pi.label}" onclick="cyclePrio(this,'${esc(d.company)}','${esc(d.role)}')" data-prio="${d.prio}">${pi.emoji}</div>`
+    : `<div class="prio-cell empty" title="Нажми чтобы задать приоритет" onclick="cyclePrio(this,'${esc(d.company)}','${esc(d.role)}')" data-prio="null">⊙</div>`;
+
+  const dimClass = DIM_STAGES.has(d.stage) ? "row-dim" : "";
+
+  return `<tr class="${dimClass}">
+    <td style="padding:0;width:4px;"><div class="row-bar" style="background:${STAGE_ACCENT[d.stage]||'#e5e7eb'};"></div></td>
+    <td style="padding:8px 4px 8px 10px;width:44px;"><div class="co-avatar" style="background:${ab};color:${at};">${av}</div></td>
+    <td style="padding:8px 10px;">
+      <div class="co-name">${esc(d.company)}</div>
+      <div class="co-role">${esc(d.role)}</div>
+      ${noteHtml}
+    </td>
+    <td style="padding:8px 6px;">
+      <div class="stage-wrap">
+        <select class="stage-select" style="background:${bg};color:${tc};" onchange="changeStage(this,'${esc(d.company)}','${esc(d.role)}')">${opts}</select>
+        ${daysBadge}
+      </div>
+    </td>
+    <td style="padding:8px 6px;">
+      <input type="date" class="${fuCls}" value="${esc(dateVal)}" onchange="changeDateUpdate(this,'${esc(d.company)}','${esc(d.role)}')">
+    </td>
+    <td style="padding:8px 6px;"><div class="fit-sq" style="background:${fb};color:${ft};">${d.fit}</div></td>
+    <td style="padding:8px 4px; text-align:center;">${prioCell}</td>
+    <td style="padding:8px 6px;" class="salary-cell">${esc(d.salary)}</td>
+    <td style="padding:8px 6px; font-size:11px; color:var(--muted); white-space:nowrap;">${daysAgo(d.date_added)}</td>
+    <td style="padding:8px 8px 8px 0;text-align:right;">${link}</td>
+  </tr>`;
+}
+
+/* ── FOCUS VIEW ── */
+function renderFocusView() {
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Section 1: Follow-ups due today or overdue
+  const followUps = DATA.filter(d => {
+    if (!d.date_update || DIM_STAGES.has(d.stage)) return false;
+    const st = followUpStatus(d.date_update);
+    return st === 'overdue' || st === 'today' || st === 'tomorrow';
+  }).sort((a,b) => (a.date_update||'').localeCompare(b.date_update||''));
+
+  // Section 2: Applied > 14 days no movement
+  const stale = DATA.filter(d => {
+    if (d.stage !== "Applied") return false;
+    const ref = d.stage_updated_at || d.date_added;
+    if (!ref) return false;
+    return Math.floor((Date.now() - new Date(ref)) / 86400000) > 14;
+  }).sort((a,b) => (a.stage_updated_at||'').localeCompare(b.stage_updated_at||''));
+
+  // Section 3: Screening + Interview
+  const active = DATA.filter(d => d.stage === "Screening" || d.stage === "Interview")
+    .sort((a,b) => (STAGES_ORDER[a.stage]||0) - (STAGES_ORDER[b.stage]||0));
+
+  function focusCard(d) {
+    const [fb,ft] = fitBg(d.fit);
+    const bg = STAGE_C[d.stage]||"#f3f4f6";
+    const tc = STAGE_TC[d.stage]||"#374151";
+    const fuStatus = followUpStatus(d.date_update);
+    const fuBadge = fuStatus && d.date_update
+      ? `<span class="focus-fu-badge focus-fu-${fuStatus}">${followUpLabel(fuStatus)} · ${d.date_update}</span>`
+      : '';
+    const dis = daysInStage(d);
+    const disStr = dis !== null && dis > 0 ? `<span class="focus-days">${dis}d in stage</span>` : '';
+    const link = d.url ? `<a class="focus-card-link" href="${esc(d.url)}" target="_blank" rel="noopener">↗</a>` : '';
     const pi = prioInfo(d.prio);
-    const prioCell = pi
-      ? `<div class="prio-cell" title="${pi.label}" onclick="cyclePrio(this,'${esc(d.company)}','${esc(d.role)}')" data-prio="${d.prio}">${pi.emoji}</div>`
-      : `<div class="prio-cell empty" title="Нажми чтобы задать приоритет" onclick="cyclePrio(this,'${esc(d.company)}','${esc(d.role)}')" data-prio="null">⊙</div>`;
-
-    // Note
-    const noteVal = d.note || "";
-    const noteHtml = `<div class="co-note" data-co="${esc(d.company)}" data-role="${esc(d.role)}"
-      data-ph="add note…" onclick="editNote(this)">${esc(noteVal)}</div>`;
-
-    // Added
-    const addedHtml = `<div class="co-added">${daysAgo(d.date_added)}</div>`;
-
-    // Follow-up date
-    const dateVal = isoToDateInput(d.date_update) || d.date_update || "";
-    const dateClass = "date-inp" + (dateVal ? " has-date" : "") + (isOverdue(dateVal) ? " overdue-date" : "");
-
-    return `<tr>
-      <td style="padding:0;width:4px;"><div class="row-bar" style="background:${STAGE_ACCENT[d.stage]||'#e5e7eb'};"></div></td>
-      <td style="padding:8px 4px 8px 10px;width:44px;">
-        <div class="co-avatar" style="background:${ab};color:${at};">${av}</div>
-      </td>
-      <td style="padding:8px 10px;">
-        <div class="co-name">${esc(d.company)}</div>
-        <div class="co-role">${esc(d.role)}</div>
-        ${noteHtml}
-        ${addedHtml}
-      </td>
-      <td style="padding:8px 4px; text-align:center;">${prioCell}</td>
-      <td style="padding:8px 6px;">
-        <div class="fit-sq" style="background:${fb};color:${ft};">${d.fit}</div>
-      </td>
-      <td style="padding:8px 6px;">
-        <div class="stage-wrap">
-          <select class="stage-select" style="background:${bg};color:${tc};"
-            onchange="changeStage(this,'${esc(d.company)}','${esc(d.role)}')">${opts}</select>
-          ${daysBadge}
+    const prioStr = pi ? `<span style="font-size:12px;">${pi.emoji}</span>` : '';
+    return `<div class="focus-card">
+      <div class="focus-card-main">
+        <div class="focus-card-co">${esc(d.company)}</div>
+        <div class="focus-card-role">${esc(d.role)}</div>
+        <div class="focus-card-meta">
+          <span class="focus-badge" style="background:${bg};color:${tc};">${d.stage}</span>
+          ${fuBadge}
+          ${disStr}
+          ${prioStr}
         </div>
-      </td>
-      <td style="padding:8px 6px;" class="salary-cell">${esc(d.salary)}</td>
-      <td style="padding:8px 6px; font-size:11px; color:var(--muted); white-space:nowrap;">${daysAgo(d.date_added)}</td>
-      <td style="padding:8px 6px;">
-        <input type="date" class="${dateClass}" value="${esc(dateVal)}"
-          onchange="changeDateUpdate(this,'${esc(d.company)}','${esc(d.role)}')">
-      </td>
-      <td style="padding:8px 8px 8px 0;text-align:right;">${link}</td>
-    </tr>`;
-  }).join("");
+      </div>
+      <div class="focus-card-fit" style="background:${fb};color:${ft};">${d.fit}</div>
+      ${link}
+    </div>`;
+  }
+
+  const sections = [
+    {
+      icon: '📅',
+      title: 'Follow-ups',
+      items: followUps,
+      emptyText: 'Нет запланированных follow-up на ближайшие дни'
+    },
+    {
+      icon: '💤',
+      title: 'Нет ответа > 14 дней',
+      items: stale,
+      emptyText: 'Все Applications свежие — хороший знак'
+    },
+    {
+      icon: '🎯',
+      title: 'В процессе',
+      items: active,
+      emptyText: 'Нет активных Screening / Interview'
+    },
+  ];
+
+  document.getElementById("focusView").innerHTML = sections.map(s => `
+    <div class="focus-section">
+      <div class="focus-section-head">
+        <span style="font-size:16px;">${s.icon}</span>
+        <span class="focus-section-title">${s.title}</span>
+        <span class="focus-section-count">${s.items.length}</span>
+      </div>
+      ${s.items.length
+        ? s.items.map(focusCard).join('')
+        : `<div class="focus-empty">${s.emptyText}</div>`}
+    </div>`).join('');
 }
 
 /* ── KANBAN ── */
@@ -649,11 +815,11 @@ function renderKanban(view) {
                    .filter(s=>s!=="Closed"||byStage["Closed"].length>0);
   document.getElementById("kanbanView").innerHTML=show.map(s=>{
     const cards=byStage[s];
-    const cardHtml=cards.length===0?`<div class="k-empty">пусто</div>`:
+    const cardHtml=cards.length===0?`<div class="k-empty">empty</div>`:
       cards.map(d=>{
         const[fb,ft]=fitBg(d.fit);
         const dis = daysInStage(d);
-        const disStr = dis !== null ? `<span style="font-size:10px;color:var(--muted);margin-left:4px;">${dis}d</span>` : "";
+        const disStr = dis !== null && dis > 0 ? `<span style="font-size:10px;color:var(--muted);margin-left:4px;">${dis}d</span>` : "";
         return`<div class="k-card" style="border-left:3px solid ${STAGE_ACCENT[s]||'#e5e7eb'};">
           <div class="k-card-co">${esc(d.company)}</div>
           <div class="k-card-role">${esc(d.role)}</div>
@@ -676,14 +842,19 @@ function renderKanban(view) {
 /* ── RENDER ── */
 function render() {
   if(!DATA.length) return;
-  const view=getView();
   renderPipeline();
-  if(currentView==="table") renderTable(view);
-  else renderKanban(view);
-  document.querySelectorAll("th[data-sort]").forEach(th=>{
-    th.classList.remove("asc","desc");
-    if(th.dataset.sort===sortKey) th.classList.add(sortDir===1?"asc":"desc");
-  });
+  if (currentView === "table") {
+    const view = getView();
+    renderTable(view);
+    document.querySelectorAll("th[data-sort]").forEach(th=>{
+      th.classList.remove("asc","desc");
+      if(th.dataset.sort===sortKey) th.classList.add(sortDir===1?"asc":"desc");
+    });
+  } else if (currentView === "focus") {
+    renderFocusView();
+  } else {
+    renderKanban(getView());
+  }
 }
 
 /* ── SORT ── */
@@ -696,10 +867,12 @@ document.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{
 /* ── VIEW ── */
 function setView(v){
   currentView=v;
-  document.getElementById("tableView").style.display=v==="table"?"":"none";
-  document.getElementById("kanbanView").classList.toggle("show",v==="kanban");
-  document.getElementById("btnTable").classList.toggle("active",v==="table");
-  document.getElementById("btnKanban").classList.toggle("active",v==="kanban");
+  document.getElementById("tableView").style.display  = v==="table"  ? "" : "none";
+  document.getElementById("focusView").classList.toggle("show", v==="focus");
+  document.getElementById("kanbanView").classList.toggle("show", v==="kanban");
+  document.getElementById("btnTable").classList.toggle("active",  v==="table");
+  document.getElementById("btnFocus").classList.toggle("active",  v==="focus");
+  document.getElementById("btnKanban").classList.toggle("active", v==="kanban");
   render();
 }
 
