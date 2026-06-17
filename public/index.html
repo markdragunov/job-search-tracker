@@ -12,7 +12,8 @@
   color-scheme: light;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text);
+html { overflow-x: auto; }
+body { min-width: 720px; background: var(--bg); color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px; line-height: 1.5; }
 
@@ -62,7 +63,7 @@ body { background: var(--bg); color: var(--text);
 .clear-btn.visible { display: block; }
 
 /* TABLE */
-.table-wrap { overflow-x: auto; background: var(--surface); }
+.table-wrap { background: var(--surface); }
 table { width: 100%; border-collapse: collapse; min-width: 680px; }
 thead th { background: #f8f9fb; font-size: 10px; text-transform: uppercase;
   letter-spacing: .06em; color: var(--muted); padding: 9px 12px; text-align: left;
