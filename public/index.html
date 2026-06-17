@@ -116,6 +116,14 @@ tbody td { padding: 0; vertical-align: middle; }
   background: transparent; width: 100%; padding: 0; }
 .co-added { font-size: 10px; color: #c4c9d4; margin-top: 2px; }
 
+/* Priority cell */
+.prio-cell { font-size: 13px; cursor: pointer; padding: 4px 2px; border-radius: 6px;
+  user-select: none; text-align: center; line-height: 1.2; transition: background .15s;
+  white-space: nowrap; }
+.prio-cell:hover { background: var(--bg); }
+.prio-cell.empty { font-size: 16px; color: #e5e7eb; }
+.prio-cell.empty:hover { color: #d1d5db; }
+
 /* Fit badge */
 .fit-sq { width: 34px; height: 34px; border-radius: 8px; display: flex;
   align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
@@ -225,6 +233,7 @@ tbody td { padding: 0; vertical-align: middle; }
         <th style="width:4px; padding:0; cursor:default;"></th>
         <th style="width:44px; cursor:default;"></th>
         <th data-sort="company">Company / Role</th>
+        <th data-sort="prio" style="width:60px;">Prio</th>
         <th data-sort="fit" style="width:52px;">Fit</th>
         <th data-sort="stage" style="width:150px;">Stage</th>
         <th data-sort="salary" style="width:90px;">Salary</th>
@@ -264,6 +273,18 @@ const ICONS = {"NEW":"✦","To apply":"→","Applied":"✉","Screening":"◎","I
 
 // Funnel key stages
 const FUNNEL_STAGES = ["Applied","Screening","Interview","Offer"];
+
+// Priority levels
+const PRIO_LEVELS = [
+  { val: 3, emoji: "❤️‍🔥❤️‍🔥❤️‍🔥", label: "СУПЕРХОТ" },
+  { val: 2, emoji: "🔥🔥🔥",       label: "ВЫСОКИЙ"  },
+  { val: 1, emoji: "❤️❤️❤️",       label: "НРАВИТСЯ" },
+  { val: 0, emoji: "👆🏻👆🏻👆🏻",  label: "ПОДУМАТЬ" },
+];
+function prioInfo(val) {
+  if (val === null || val === undefined) return null;
+  return PRIO_LEVELS.find(p => p.val === val) || null;
+}
 
 const AV_COLORS = [
   ["#dbeafe","#1e40af"],["#ede9fe","#5b21b6"],["#d1fae5","#065f46"],
@@ -369,6 +390,34 @@ async function changeStage(selectEl, company, role) {
   }
 }
 
+/* ── CYCLE PRIORITY ── */
+async function cyclePrio(el, company, role) {
+  const cur = el.dataset.prio === "null" ? null : parseInt(el.dataset.prio);
+  // cycle: null → 3 → 2 → 1 → 0 → null
+  let next;
+  if (cur === null) next = 3;
+  else if (cur === 0) next = null;
+  else next = cur - 1;
+
+  const pi = prioInfo(next);
+  if (pi) {
+    el.textContent = pi.emoji;
+    el.title = pi.label;
+    el.classList.remove("empty");
+    el.dataset.prio = next;
+  } else {
+    el.textContent = "⊙";
+    el.title = "Нажми чтобы задать приоритет";
+    el.classList.add("empty");
+    el.dataset.prio = "null";
+  }
+
+  const job = DATA.find(j => j.company === company && j.role === role);
+  if (job) job.prio = next;
+  await saveField(company, role, "prio", next);
+  renderPipeline(); // refresh funnel counts if needed
+}
+
 /* ── NOTE EDIT ── */
 function editNote(el) {
   if (el.querySelector("input")) return;
@@ -426,6 +475,7 @@ function getView() {
     let va=a.d[sortKey], vb=b.d[sortKey];
     if(sortKey==="stage"){va=STAGES_ORDER[va]??99;vb=STAGES_ORDER[vb]??99;}
     if(sortKey==="date_added"){va=va||"";vb=vb||"";}
+    if(sortKey==="prio"){va=va??-1;vb=vb??-1;}
     if(typeof va==="number") return(va-vb)*sortDir;
     return String(va).localeCompare(String(vb))*sortDir;
   });
@@ -539,6 +589,12 @@ function renderTable(view) {
       </div>`;
     }
 
+    // Prio cell
+    const pi = prioInfo(d.prio);
+    const prioCell = pi
+      ? `<div class="prio-cell" title="${pi.label}" onclick="cyclePrio(this,'${esc(d.company)}','${esc(d.role)}')" data-prio="${d.prio}">${pi.emoji}</div>`
+      : `<div class="prio-cell empty" title="Нажми чтобы задать приоритет" onclick="cyclePrio(this,'${esc(d.company)}','${esc(d.role)}')" data-prio="null">⊙</div>`;
+
     // Note
     const noteVal = d.note || "";
     const noteHtml = `<div class="co-note" data-co="${esc(d.company)}" data-role="${esc(d.role)}"
@@ -562,6 +618,7 @@ function renderTable(view) {
         ${noteHtml}
         ${addedHtml}
       </td>
+      <td style="padding:8px 4px; text-align:center;">${prioCell}</td>
       <td style="padding:8px 6px;">
         <div class="fit-sq" style="background:${fb};color:${ft};">${d.fit}</div>
       </td>

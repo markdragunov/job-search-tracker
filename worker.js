@@ -95,7 +95,7 @@ async function handleAPI(request, env, ctx, url) {
     );
     if (!job) return json({ error: "job not found" }, 404);
 
-    const ALLOWED = ["stage", "note", "date_update", "salary", "fit", "url"];
+    const ALLOWED = ["stage", "note", "date_update", "salary", "fit", "url", "prio"];
     for (const key of ALLOWED) {
       if (updates[key] !== undefined) {
         job[key] = updates[key];
@@ -121,7 +121,7 @@ async function handleAPI(request, env, ctx, url) {
 
   // POST — add a new job
   if (method === "POST") {
-    const { company, role, fit, stage, salary, url: jobUrl, note, date_update } = body;
+    const { company, role, fit, stage, salary, url: jobUrl, note, date_update, prio } = body;
     if (!company || !role) return json({ error: "company and role required" }, 400);
 
     const jobs = await getJobs(env);
@@ -141,6 +141,7 @@ async function handleAPI(request, env, ctx, url) {
       salary: salary || "уточнить",
       url: jobUrl || "",
       note: note || "",
+      prio: prio ?? null,
       date_added: now,
       stage_updated_at: now,
       date_update: date_update || "",
