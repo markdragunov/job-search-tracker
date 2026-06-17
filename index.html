@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Tracker — Senior PM</title>
+<style>
+:root {
+  --bg: #f4f6f9; --surface: #fff; --border: #e5e7eb;
+  --border-light: #f0f2f5; --text: #111827; --muted: #6b7280;
+  --blue: #2563eb; --blue-light: #eff6ff; --radius: 12px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px; line-height: 1.5; }
+
+/* TOPBAR */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 12px 20px; position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topbar-title h1 { font-size: 15px; font-weight: 700; }
+.topbar-title .sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.view-btn { padding: 5px 11px; font-size: 12px; font-weight: 500; cursor: pointer;
+  background: var(--bg); color: var(--muted); border: none; transition: background .15s; }
+.view-btn.active { background: var(--surface); color: var(--text); }
+
+/* PIPELINE */
+.pipeline { background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 20px; display: flex; align-items: center; gap: 6px;
+  overflow-x: auto; position: sticky; top: 61px; z-index: 18; }
+.pip { flex: 1; min-width: 60px; border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 6px; text-align: center; background: var(--bg); cursor: pointer;
+  transition: border-color .15s, background .15s; user-select: none; }
+.pip:hover { border-color: #c4b5fd; }
+.pip.active-filter { border-color: #7c3aed; background: #faf5ff; }
+.pip .pn { font-size: 20px; font-weight: 800; line-height: 1; }
+.pip .pl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
+.pip.s-new { background: #faf5ff; border-color: #ddd6fe; }
+.pip.s-new .pn { color: #6d28d9; }
+.pip.s-active { background: #eff6ff; border-color: #bfdbfe; }
+.pip.s-active .pn { color: #1d4ed8; }
+.pip.s-closed { background: #f9fafb; border-color: #e5e7eb; }
+.pip.s-closed .pn { color: #6b7280; }
+.pip-arrow { color: #d1d5db; font-size: 16px; flex-shrink: 0; }
+
+/* TOOLBAR */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  background: #f8f9fb; border-bottom: 1px solid var(--border);
+  padding: 9px 20px; position: sticky; top: 121px; z-index: 17; }
+.toolbar-search { display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; flex: 1; min-width: 160px; max-width: 280px; }
+.toolbar-search input { border: none; outline: none; font-size: 13px; background: transparent;
+  color: var(--text); width: 100%; font-family: inherit; }
+.toolbar select { padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text); cursor: pointer; }
+.clear-btn { padding: 6px 12px; font-size: 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; display: none; }
+.clear-btn.visible { display: block; }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; min-width: 680px; }
+thead th { background: #f8f9fb; font-size: 10px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted); padding: 9px 12px; text-align: left;
+  cursor: pointer; user-select: none; white-space: nowrap;
+  border-bottom: 1px solid var(--border); position: sticky; top: 169px; z-index: 10; }
+thead th:hover { background: #f0f2f5; color: var(--text); }
+thead th.asc::after { content: " ↑"; }
+thead th.desc::after { content: " ↓"; }
+tbody tr { border-bottom: 1px solid var(--border-light); }
+tbody tr:hover td { background: #fafbfc; }
+tbody td { padding: 0; vertical-align: middle; }
+
+/* Row accent bar */
+.row-bar { width: 4px; height: 100%; min-height: 46px; }
+
+/* Avatar */
+.co-avatar { width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0; letter-spacing: -0.02em; }
+.co-name { font-size: 13px; font-weight: 600; }
+.co-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Fit badge */
+.fit-sq { width: 34px; height: 34px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+
+/* Stage select */
+.stage-select { appearance: auto; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid transparent; font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: inherit; outline: none; }
+.stage-select:hover { border-color: rgba(0,0,0,.1); }
+.stage-select.saving { opacity: .6; pointer-events: none; }
+
+.salary-cell { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.lnk { text-decoration: none; font-size: 15px; color: #d1d5db; padding: 2px 6px;
+  border-radius: 5px; }
+.lnk:hover { color: var(--blue); background: var(--blue-light); }
+
+/* Toast */
+.toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: #fff;
+  padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2); z-index: 999; opacity: 0;
+  transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+/* KANBAN */
+.kanban-view { display: none; overflow-x: auto; padding: 16px 20px; gap: 10px; }
+.kanban-view.show { display: flex; }
+.k-col { min-width: 180px; max-width: 200px; flex-shrink: 0; }
+.k-col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.k-col-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.k-col-count { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 1px 7px; font-size: 11px; color: var(--muted); }
+.k-card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+.k-card-co { font-size: 12px; font-weight: 600; }
+.k-card-role { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+.k-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.k-fit { width: 24px; height: 24px; border-radius: 5px; display: flex;
+  align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.k-salary { font-size: 10px; color: var(--muted); }
+.k-empty { padding: 16px; text-align: center; font-size: 12px; color: #d1d5db;
+  border: 1px dashed var(--border); border-radius: 10px; }
+
+.foot { color: var(--muted); font-size: 11px; text-align: center; padding: 16px; }
+
+@media (max-width: 720px) {
+  .kanban-view { display: none !important; }
+  .view-toggle { display: none; }
+  .pipeline { padding: 8px 12px; gap: 4px; }
+  .pip { min-width: 48px; padding: 6px 4px; }
+  .pip .pn { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <h1>Job Tracker</h1>
+    <div class="sub">Senior PM · Payments / Fintech / Crypto · Remote EU</div>
+  </div>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btnTable" onclick="setView('table')">☰ Table</button>
+    <button class="view-btn" id="btnKanban" onclick="setView('kanban')">⊞ Kanban</button>
+  </div>
+</header>
+
+<div class="pipeline" id="pipeline"></div>
+
+<div class="toolbar">
+  <div class="toolbar-search">
+    <span style="color:var(--muted)">⌕</span>
+    <input id="search" type="text" placeholder="Search company or role…">
+  </div>
+  <select id="filterStage"><option value="">All stages</option></select>
+  <button class="clear-btn" id="clearBtn" onclick="clearFilters()">✕ Clear</button>
+</div>
+
+<div class="table-wrap" id="tableView">
+  <div class="loading" id="loadingMsg">Loading…</div>
+  <table id="jobTable" style="display:none;">
+    <thead>
+      <tr>
+        <th style="width:4px; padding:0; cursor:default;"></th>
+        <th style="width:44px; cursor:default;"></th>
+        <th data-sort="company">Company / Role</th>
+        <th data-sort="fit" style="width:52px;">Fit</th>
+        <th data-sort="stage" style="width:140px;">Stage</th>
+        <th data-sort="salary" style="width:100px;">Salary</th>
+        <th style="width:32px; cursor:default;"></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<div class="kanban-view" id="kanbanView"></div>
+
+<p class="foot">mark-d.dev · Job Tracker · 2026</p>
+<div class="toast" id="toast"></div>
+
+<script>
+const STAGES = ["NEW","To apply","Applied","Screening","Interview","Offer","Rejected","Closed"];
+const STAGE_C = {
+  "NEW":"#ede9fe","To apply":"#fef9c3","Applied":"#dbeafe",
+  "Screening":"#e0e7ff","Interview":"#d1fae5","Offer":"#a7f3d0",
+  "Rejected":"#fee2e2","Closed":"#f3f4f6"
+};
+const STAGE_TC = {
+  "NEW":"#5b21b6","To apply":"#854d0e","Applied":"#1e40af",
+  "Screening":"#3730a3","Interview":"#065f46","Offer":"#064e3b",
+  "Rejected":"#991b1b","Closed":"#6b7280"
+};
+const STAGE_ACCENT = {
+  "NEW":"#a78bfa","To apply":"#fbbf24","Applied":"#60a5fa",
+  "Screening":"#818cf8","Interview":"#34d399","Offer":"#10b981",
+  "Rejected":"#f87171","Closed":"#d1d5db"
+};
+const STAGES_ORDER = {"NEW":0,"To apply":1,"Applied":2,"Screening":3,"Interview":4,"Offer":5,"Rejected":6,"Closed":7};
+const ICONS = {"NEW":"✦","To apply":"→","Applied":"✉","Screening":"◎","Interview":"◈","Offer":"★","Rejected":"✕","Closed":"○"};
+
+const AV_COLORS = [
+  ["#dbeafe","#1e40af"],["#ede9fe","#5b21b6"],["#d1fae5","#065f46"],
+  ["#fef9c3","#854d0e"],["#fee2e2","#991b1b"],["#e0e7ff","#3730a3"],
+  ["#fce7f3","#9d174d"],["#ecfdf5","#065f46"]
+];
+function avColor(n){ const i=(n.charCodeAt(0)+(n.charCodeAt(1)||0))%AV_COLORS.length; return AV_COLORS[i]; }
+function avInitials(n){ const w=n.split(/[\s\/\-]/); return (w[0][0]+(w[1]?w[1][0]:w[0][1]||'')).toUpperCase(); }
+function fitBg(f){
+  if(f>=9) return["#dcfce7","#166534"];
+  if(f>=8.5)return["#bbf7d0","#15803d"];
+  if(f>=8) return["#fef9c3","#854d0e"];
+  if(f>=7.5)return["#fde68a","#92400e"];
+  if(f>=7) return["#fed7aa","#9a3412"];
+  return["#fee2e2","#991b1b"];
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+let DATA = [];
+let sortKey = "fit", sortDir = -1;
+let activeStageFilter = "";
+let currentView = "table";
+
+/* ── FETCH ── */
+async function loadJobs() {
+  try {
+    const r = await fetch("/api/jobs");
+    if (!r.ok) throw new Error(r.status);
+    DATA = await r.json();
+    document.getElementById("loadingMsg").style.display = "none";
+    document.getElementById("jobTable").style.display = "";
+    populateStageFilter();
+    render();
+    stickyFix();
+  } catch(e) {
+    document.getElementById("loadingMsg").textContent = "Failed to load. Check /api/jobs is available.";
+  }
+}
+
+/* ── STAGE CHANGE ── */
+async function changeStage(selectEl, company, role) {
+  const newStage = selectEl.value;
+  selectEl.classList.add("saving");
+  try {
+    const r = await fetch("/api/jobs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ company, role, stage: newStage })
+    });
+    if (!r.ok) throw new Error(r.status);
+    // Update local data
+    const job = DATA.find(j => j.company === company && j.role === role);
+    if (job) job.stage = newStage;
+    showToast(`${company} → ${newStage}`);
+    render();
+  } catch(e) {
+    showToast("Error saving — check console", true);
+    selectEl.value = DATA.find(j=>j.company===company&&j.role===role)?.stage || "";
+  } finally {
+    selectEl.classList.remove("saving");
+  }
+}
+
+/* ── TOAST ── */
+let toastTimer;
+function showToast(msg, isError=false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.background = isError ? "#dc2626" : "#1f2937";
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+/* ── FILTER / SORT ── */
+function getView() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const fS = document.getElementById("filterStage").value;
+  let view = DATA.map((d,i)=>({d,i}));
+  if(q)  view = view.filter(x=>(x.d.company+" "+x.d.role).toLowerCase().includes(q));
+  if(fS) view = view.filter(x=>x.d.stage===fS);
+  view.sort((a,b)=>{
+    let va=a.d[sortKey], vb=b.d[sortKey];
+    if(sortKey==="stage"){va=STAGES_ORDER[va]??99;vb=STAGES_ORDER[vb]??99;}
+    if(typeof va==="number") return(va-vb)*sortDir;
+    return String(va).localeCompare(String(vb))*sortDir;
+  });
+  return view;
+}
+
+/* ── PIPELINE ── */
+function renderPipeline() {
+  const counts = {};
+  STAGES.forEach(s=>counts[s]=0);
+  DATA.forEach(d=>counts[d.stage]=(counts[d.stage]||0)+1);
+  const pip = document.getElementById("pipeline");
+  let html = `<div class="pip ${activeStageFilter===''?'active-filter':''}" onclick="setStageFilter('')">
+    <div class="pn">${DATA.length}</div><div class="pl">Total</div></div>`;
+  STAGES.forEach((s,i)=>{
+    if(!counts[s]) return;
+    let cls = s==="NEW"?"s-new":s==="Closed"?"s-closed":["Applied","Screening","Interview"].includes(s)?"s-active":"";
+    const arrow = i>0?'<span class="pip-arrow">›</span>':'';
+    html+=`${arrow}<div class="pip ${cls} ${activeStageFilter===s?'active-filter':''}" onclick="setStageFilter('${s}')">
+      <div class="pn">${counts[s]}</div><div class="pl">${s}</div></div>`;
+  });
+  pip.innerHTML = html;
+}
+
+function setStageFilter(s){
+  activeStageFilter=s;
+  document.getElementById("filterStage").value=s;
+  updateClearBtn();
+  render();
+}
+function clearFilters(){
+  document.getElementById("search").value="";
+  activeStageFilter="";
+  document.getElementById("filterStage").value="";
+  updateClearBtn();
+  render();
+}
+function updateClearBtn(){
+  document.getElementById("clearBtn").classList.toggle("visible",
+    !!(document.getElementById("search").value||activeStageFilter));
+}
+
+/* ── TABLE ── */
+function renderTable(view) {
+  document.getElementById("rows").innerHTML = view.map(({d})=>{
+    const [fb,ft]=fitBg(d.fit);
+    const [ab,at]=avColor(d.company);
+    const av=avInitials(d.company);
+    const link=d.url?`<a class="lnk" href="${esc(d.url)}" target="_blank" rel="noopener">↗</a>`:"";
+    const opts=STAGES.map(s=>`<option value="${s}"${s===d.stage?" selected":""}>${ICONS[s]||""} ${s}</option>`).join("");
+    const bg=STAGE_C[d.stage]||"#f3f4f6";
+    const tc=STAGE_TC[d.stage]||"#374151";
+    return `<tr>
+      <td style="padding:0;width:4px;"><div class="row-bar" style="background:${STAGE_ACCENT[d.stage]||'#e5e7eb'};"></div></td>
+      <td style="padding:8px 4px 8px 10px;width:44px;">
+        <div class="co-avatar" style="background:${ab};color:${at};">${av}</div>
+      </td>
+      <td style="padding:8px 10px;">
+        <div class="co-name">${esc(d.company)}</div>
+        <div class="co-role">${esc(d.role)}</div>
+      </td>
+      <td style="padding:8px 6px;">
+        <div class="fit-sq" style="background:${fb};color:${ft};">${d.fit}</div>
+      </td>
+      <td style="padding:8px 6px;">
+        <select class="stage-select" style="background:${bg};color:${tc};"
+          onchange="changeStage(this,'${esc(d.company)}','${esc(d.role)}')">${opts}</select>
+      </td>
+      <td style="padding:8px 6px;" class="salary-cell">${esc(d.salary)}</td>
+      <td style="padding:8px 8px 8px 0;text-align:right;">${link}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ── KANBAN ── */
+function renderKanban(view) {
+  const byStage={};
+  STAGES.forEach(s=>byStage[s]=[]);
+  view.forEach(({d})=>{ if(byStage[d.stage]) byStage[d.stage].push(d); });
+  const show=STAGES.filter(s=>byStage[s].length>0||["To apply","Applied","Screening","Interview"].includes(s))
+                   .filter(s=>s!=="Closed"||byStage["Closed"].length>0);
+  document.getElementById("kanbanView").innerHTML=show.map(s=>{
+    const cards=byStage[s];
+    const cardHtml=cards.length===0?`<div class="k-empty">пусто</div>`:
+      cards.map(d=>{
+        const[fb,ft]=fitBg(d.fit);
+        return`<div class="k-card" style="border-left:3px solid ${STAGE_ACCENT[s]||'#e5e7eb'};">
+          <div class="k-card-co">${esc(d.company)}</div>
+          <div class="k-card-role">${esc(d.role)}</div>
+          <div class="k-card-foot">
+            <span class="k-salary">${esc(d.salary)}</span>
+            <div class="k-fit" style="background:${fb};color:${ft};">${d.fit}</div>
+          </div></div>`;
+      }).join("");
+    return`<div class="k-col">
+      <div class="k-col-head">
+        <span class="k-col-label" style="color:${STAGE_TC[s]||'var(--muted)'};">${s}</span>
+        <span class="k-col-count">${cards.length}</span>
+      </div>${cardHtml}</div>`;
+  }).join("");
+}
+
+/* ── RENDER ── */
+function render() {
+  if(!DATA.length) return;
+  const view=getView();
+  renderPipeline();
+  if(currentView==="table") renderTable(view);
+  else renderKanban(view);
+  document.querySelectorAll("th[data-sort]").forEach(th=>{
+    th.classList.remove("asc","desc");
+    if(th.dataset.sort===sortKey) th.classList.add(sortDir===1?"asc":"desc");
+  });
+}
+
+/* ── SORT ── */
+document.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{
+  const k=th.dataset.sort;
+  sortKey===k?sortDir*=-1:(sortKey=k,sortDir=k==="fit"?-1:1);
+  render();
+});
+
+/* ── VIEW ── */
+function setView(v){
+  currentView=v;
+  document.getElementById("tableView").style.display=v==="table"?"":"none";
+  document.getElementById("kanbanView").classList.toggle("show",v==="kanban");
+  document.getElementById("btnTable").classList.toggle("active",v==="table");
+  document.getElementById("btnKanban").classList.toggle("active",v==="kanban");
+  render();
+}
+
+/* ── EVENTS ── */
+document.getElementById("search").addEventListener("input",()=>{updateClearBtn();render();});
+document.getElementById("filterStage").addEventListener("change",e=>{
+  activeStageFilter=e.target.value; updateClearBtn(); render();
+});
+
+function populateStageFilter(){
+  const fs=document.getElementById("filterStage");
+  STAGES.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;fs.appendChild(o);});
+}
+
+/* ── STICKY FIX ── */
+function stickyFix(){
+  const tb=document.querySelector('.topbar');
+  const pl=document.getElementById('pipeline');
+  const to=document.querySelector('.toolbar');
+  if(!tb||!pl||!to) return;
+  const tbH=Math.round(tb.getBoundingClientRect().height);
+  const plH=Math.round(pl.getBoundingClientRect().height);
+  const toH=Math.round(to.getBoundingClientRect().height);
+  pl.style.top=tbH+'px';
+  to.style.top=(tbH+plH)+'px';
+  document.querySelectorAll('thead th').forEach(th=>th.style.top=(tbH+plH+toH)+'px');
+}
+window.addEventListener('resize',stickyFix);
+
+/* ── INIT ── */
+loadJobs();
+</script>
+</body>
+</html>

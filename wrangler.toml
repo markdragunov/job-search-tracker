@@ -1,0 +1,8 @@
+name = "job-tracker"
+compatibility_date = "2024-09-23"
+
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "JOB_TRACKER"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
