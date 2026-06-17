@@ -23,15 +23,21 @@ body { min-width: 720px; background: var(--bg); color: var(--text);
   display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .topbar-title h1 { font-size: 15px; font-weight: 700; }
 .topbar-title .sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
 .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .view-btn { padding: 5px 11px; font-size: 12px; font-weight: 500; cursor: pointer;
   background: var(--bg); color: var(--muted); border: none; transition: background .15s; }
 .view-btn.active { background: var(--surface); color: var(--text); }
+.funnel-toggle-btn { padding: 5px 10px; font-size: 12px; font-weight: 500; cursor: pointer;
+  background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 8px; transition: background .15s; white-space: nowrap; }
+.funnel-toggle-btn.active { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
 
 /* PIPELINE */
 .pipeline { background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 10px 20px; display: flex; align-items: center; gap: 6px;
-  overflow-x: auto; position: sticky; top: 61px; z-index: 18; }
+  padding: 10px 20px; display: flex; flex-direction: column; gap: 0;
+  position: sticky; top: 61px; z-index: 18; }
+.pills-row { display: flex; align-items: center; gap: 6px; overflow-x: auto; }
 .pip { flex: 1; min-width: 60px; border: 1px solid var(--border); border-radius: 10px;
   padding: 8px 6px; text-align: center; background: var(--bg); cursor: pointer;
   transition: border-color .15s, background .15s; user-select: none; }
@@ -46,6 +52,22 @@ body { min-width: 720px; background: var(--bg); color: var(--text);
 .pip.s-closed { background: #f9fafb; border-color: #e5e7eb; }
 .pip.s-closed .pn { color: #6b7280; }
 .pip-arrow { color: #d1d5db; font-size: 16px; flex-shrink: 0; }
+
+/* FUNNEL ROW */
+.funnel-row { display: none; align-items: center; gap: 0;
+  padding: 8px 0 2px; border-top: 1px solid var(--border-light); margin-top: 8px;
+  overflow-x: auto; }
+.funnel-row.show { display: flex; }
+.f-step { display: flex; flex-direction: column; align-items: center; min-width: 80px; }
+.f-step-num { font-size: 18px; font-weight: 800; line-height: 1; }
+.f-step-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+.f-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 0 6px; flex-shrink: 0; }
+.f-arrow-line { font-size: 14px; color: #d1d5db; line-height: 1; }
+.f-arrow-pct { font-size: 10px; font-weight: 600; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+.f-arrow-pct.good { color: #16a34a; }
+.f-arrow-pct.mid  { color: #ca8a04; }
+.f-arrow-pct.low  { color: #dc2626; }
 
 /* TOOLBAR */
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
@@ -64,7 +86,7 @@ body { min-width: 720px; background: var(--bg); color: var(--text);
 
 /* TABLE */
 .table-wrap { background: var(--surface); }
-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+table { width: 100%; border-collapse: collapse; min-width: 780px; }
 thead th { background: #f8f9fb; font-size: 10px; text-transform: uppercase;
   letter-spacing: .06em; color: var(--muted); padding: 9px 12px; text-align: left;
   cursor: pointer; user-select: none; white-space: nowrap;
@@ -85,17 +107,40 @@ tbody td { padding: 0; vertical-align: middle; }
   font-size: 11px; font-weight: 700; flex-shrink: 0; letter-spacing: -0.02em; }
 .co-name { font-size: 13px; font-weight: 600; }
 .co-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.co-note { font-size: 11px; color: #9ca3af; margin-top: 3px; min-height: 14px;
+  cursor: text; border-bottom: 1px dashed transparent; transition: border-color .15s; }
+.co-note:hover { border-color: #d1d5db; color: var(--muted); }
+.co-note:empty::before { content: attr(data-ph); color: #d1d5db; }
+.note-input { font-size: 11px; color: var(--text); font-family: inherit;
+  border: none; border-bottom: 1px solid var(--blue); outline: none;
+  background: transparent; width: 100%; padding: 0; }
+.co-added { font-size: 10px; color: #c4c9d4; margin-top: 2px; }
 
 /* Fit badge */
 .fit-sq { width: 34px; height: 34px; border-radius: 8px; display: flex;
   align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
 
-/* Stage select */
+/* Stage select + days badge */
+.stage-wrap { display: flex; flex-direction: column; gap: 3px; }
 .stage-select { appearance: auto; padding: 3px 8px; border-radius: 999px;
   border: 1px solid transparent; font-size: 11px; font-weight: 600;
   cursor: pointer; font-family: inherit; outline: none; }
 .stage-select:hover { border-color: rgba(0,0,0,.1); }
 .stage-select.saving { opacity: .6; pointer-events: none; }
+.days-badge { font-size: 10px; color: var(--muted); padding-left: 2px;
+  display: flex; align-items: center; gap: 3px; }
+.days-badge .days-num { font-weight: 600; }
+.days-badge.stale .days-num { color: #f59e0b; }
+.days-badge.overdue .days-num { color: #ef4444; }
+
+/* Date follow-up */
+.date-inp { font-size: 11px; color: var(--muted); border: none;
+  background: transparent; font-family: inherit; cursor: pointer;
+  padding: 3px 4px; border-radius: 6px; border: 1px solid transparent; }
+.date-inp:hover { border-color: var(--border); background: var(--bg); }
+.date-inp:focus { outline: none; border-color: var(--blue); background: var(--surface); }
+.date-inp.has-date { color: var(--text); }
+.date-inp.overdue-date { color: #dc2626; }
 
 .salary-cell { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .lnk { text-decoration: none; font-size: 15px; color: #d1d5db; padding: 2px 6px;
@@ -149,13 +194,19 @@ tbody td { padding: 0; vertical-align: middle; }
     <h1>Job Tracker</h1>
     <div class="sub">Senior PM · Payments / Fintech / Crypto · Remote EU</div>
   </div>
-  <div class="view-toggle">
-    <button class="view-btn active" id="btnTable" onclick="setView('table')">☰ Table</button>
-    <button class="view-btn" id="btnKanban" onclick="setView('kanban')">⊞ Kanban</button>
+  <div class="topbar-right">
+    <button class="funnel-toggle-btn" id="funnelToggleBtn" onclick="toggleFunnel()">📊 Funnel</button>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btnTable" onclick="setView('table')">☰ Table</button>
+      <button class="view-btn" id="btnKanban" onclick="setView('kanban')">⊞ Kanban</button>
+    </div>
   </div>
 </header>
 
-<div class="pipeline" id="pipeline"></div>
+<div class="pipeline" id="pipeline">
+  <div class="pills-row" id="pillsRow"></div>
+  <div class="funnel-row" id="funnelRow"></div>
+</div>
 
 <div class="toolbar">
   <div class="toolbar-search">
@@ -175,8 +226,10 @@ tbody td { padding: 0; vertical-align: middle; }
         <th style="width:44px; cursor:default;"></th>
         <th data-sort="company">Company / Role</th>
         <th data-sort="fit" style="width:52px;">Fit</th>
-        <th data-sort="stage" style="width:140px;">Stage</th>
-        <th data-sort="salary" style="width:100px;">Salary</th>
+        <th data-sort="stage" style="width:150px;">Stage</th>
+        <th data-sort="salary" style="width:90px;">Salary</th>
+        <th data-sort="date_added" style="width:70px;">Added</th>
+        <th style="width:110px; cursor:default;">Follow-up</th>
         <th style="width:32px; cursor:default;"></th>
       </tr>
     </thead>
@@ -209,6 +262,9 @@ const STAGE_ACCENT = {
 const STAGES_ORDER = {"NEW":0,"To apply":1,"Applied":2,"Screening":3,"Interview":4,"Offer":5,"Rejected":6,"Closed":7};
 const ICONS = {"NEW":"✦","To apply":"→","Applied":"✉","Screening":"◎","Interview":"◈","Offer":"★","Rejected":"✕","Closed":"○"};
 
+// Funnel key stages
+const FUNNEL_STAGES = ["Applied","Screening","Interview","Offer"];
+
 const AV_COLORS = [
   ["#dbeafe","#1e40af"],["#ede9fe","#5b21b6"],["#d1fae5","#065f46"],
   ["#fef9c3","#854d0e"],["#fee2e2","#991b1b"],["#e0e7ff","#3730a3"],
@@ -226,10 +282,32 @@ function fitBg(f){
 }
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
+/* ── DATE HELPERS ── */
+function daysAgo(iso) {
+  if (!iso) return '—';
+  const d = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  if (d === 0) return 'today';
+  if (d === 1) return '1d ago';
+  return `${d}d ago`;
+}
+function daysInStage(job) {
+  if (!job.stage_updated_at) return null;
+  return Math.floor((Date.now() - new Date(job.stage_updated_at)) / 86400000);
+}
+function isoToDateInput(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toISOString().split('T')[0]; } catch(e) { return ''; }
+}
+function isOverdue(dateStr) {
+  if (!dateStr) return false;
+  return new Date(dateStr) < new Date(new Date().toDateString());
+}
+
 let DATA = [];
 let sortKey = "fit", sortDir = -1;
 let activeStageFilter = "";
 let currentView = "table";
+let funnelVisible = false;
 
 /* ── FETCH ── */
 async function loadJobs() {
@@ -247,6 +325,24 @@ async function loadJobs() {
   }
 }
 
+/* ── GENERIC PATCH ── */
+async function saveField(company, role, field, value) {
+  try {
+    const r = await fetch("/api/jobs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ company, role, [field]: value })
+    });
+    if (!r.ok) throw new Error(r.status);
+    const job = DATA.find(j => j.company === company && j.role === role);
+    if (job) job[field] = value;
+    return true;
+  } catch(e) {
+    showToast("Error saving", true);
+    return false;
+  }
+}
+
 /* ── STAGE CHANGE ── */
 async function changeStage(selectEl, company, role) {
   const newStage = selectEl.value;
@@ -258,9 +354,11 @@ async function changeStage(selectEl, company, role) {
       body: JSON.stringify({ company, role, stage: newStage })
     });
     if (!r.ok) throw new Error(r.status);
-    // Update local data
     const job = DATA.find(j => j.company === company && j.role === role);
-    if (job) job.stage = newStage;
+    if (job) {
+      job.stage = newStage;
+      job.stage_updated_at = new Date().toISOString();
+    }
     showToast(`${company} → ${newStage}`);
     render();
   } catch(e) {
@@ -269,6 +367,41 @@ async function changeStage(selectEl, company, role) {
   } finally {
     selectEl.classList.remove("saving");
   }
+}
+
+/* ── NOTE EDIT ── */
+function editNote(el) {
+  if (el.querySelector("input")) return;
+  const company = el.dataset.co;
+  const role = el.dataset.role;
+  const current = el.textContent.trim();
+  el.innerHTML = `<input class="note-input" value="${esc(current)}" placeholder="add note…" maxlength="200">`;
+  const input = el.querySelector("input");
+  input.focus(); input.select();
+
+  async function commit() {
+    const val = input.value.trim();
+    el.textContent = val;
+    el.dataset.ph = "add note…";
+    await saveField(company, role, "note", val);
+  }
+  input.onblur = commit;
+  input.onkeydown = e => {
+    if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+    if (e.key === "Escape") {
+      el.textContent = current;
+      el.dataset.ph = "add note…";
+    }
+  };
+}
+
+/* ── DATE UPDATE CHANGE ── */
+async function changeDateUpdate(inputEl, company, role) {
+  const val = inputEl.value; // yyyy-mm-dd or ""
+  inputEl.classList.toggle("has-date", !!val);
+  inputEl.classList.toggle("overdue-date", isOverdue(val));
+  await saveField(company, role, "date_update", val);
+  showToast(val ? `Follow-up set: ${val}` : "Follow-up cleared");
 }
 
 /* ── TOAST ── */
@@ -292,6 +425,7 @@ function getView() {
   view.sort((a,b)=>{
     let va=a.d[sortKey], vb=b.d[sortKey];
     if(sortKey==="stage"){va=STAGES_ORDER[va]??99;vb=STAGES_ORDER[vb]??99;}
+    if(sortKey==="date_added"){va=va||"";vb=vb||"";}
     if(typeof va==="number") return(va-vb)*sortDir;
     return String(va).localeCompare(String(vb))*sortDir;
   });
@@ -303,7 +437,7 @@ function renderPipeline() {
   const counts = {};
   STAGES.forEach(s=>counts[s]=0);
   DATA.forEach(d=>counts[d.stage]=(counts[d.stage]||0)+1);
-  const pip = document.getElementById("pipeline");
+  const pip = document.getElementById("pillsRow");
   let html = `<div class="pip ${activeStageFilter===''?'active-filter':''}" onclick="setStageFilter('')">
     <div class="pn">${DATA.length}</div><div class="pl">Total</div></div>`;
   STAGES.forEach((s,i)=>{
@@ -314,6 +448,56 @@ function renderPipeline() {
       <div class="pn">${counts[s]}</div><div class="pl">${s}</div></div>`;
   });
   pip.innerHTML = html;
+
+  // Funnel
+  if (funnelVisible) renderFunnel(counts);
+}
+
+function renderFunnel(counts) {
+  const row = document.getElementById("funnelRow");
+  if (!funnelVisible) { row.classList.remove("show"); return; }
+
+  // Count jobs that ever reached each funnel stage (cumulative: stage >= X)
+  // We use current snapshot counts from KV
+  const stageIdx = s => STAGES_ORDER[s] ?? 99;
+  const funnelCounts = FUNNEL_STAGES.map(s => {
+    return DATA.filter(j => stageIdx(j.stage) >= stageIdx(s) && j.stage !== "Rejected" && j.stage !== "Closed").length;
+  });
+
+  let html = "";
+  FUNNEL_STAGES.forEach((s, i) => {
+    const n = funnelCounts[i];
+    const [, tc] = [STAGE_C[s], STAGE_TC[s]];
+    html += `<div class="f-step">
+      <div class="f-step-num" style="color:${tc||'var(--text)'};">${n}</div>
+      <div class="f-step-label">${s}</div>
+    </div>`;
+    if (i < FUNNEL_STAGES.length - 1) {
+      const next = funnelCounts[i+1];
+      const pct = n > 0 ? Math.round(next/n*100) : 0;
+      const pctCls = pct >= 50 ? "good" : pct >= 25 ? "mid" : "low";
+      html += `<div class="f-arrow">
+        <div class="f-arrow-line">→</div>
+        <div class="f-arrow-pct ${pctCls}">${pct}%</div>
+      </div>`;
+    }
+  });
+  row.innerHTML = html;
+  row.classList.add("show");
+  // Recalculate sticky offsets because funnel row changed height
+  setTimeout(stickyFix, 0);
+}
+
+function toggleFunnel() {
+  funnelVisible = !funnelVisible;
+  document.getElementById("funnelToggleBtn").classList.toggle("active", funnelVisible);
+  const row = document.getElementById("funnelRow");
+  if (!funnelVisible) {
+    row.classList.remove("show");
+    row.innerHTML = "";
+    setTimeout(stickyFix, 0);
+  }
+  render();
 }
 
 function setStageFilter(s){
@@ -344,6 +528,29 @@ function renderTable(view) {
     const opts=STAGES.map(s=>`<option value="${s}"${s===d.stage?" selected":""}>${ICONS[s]||""} ${s}</option>`).join("");
     const bg=STAGE_C[d.stage]||"#f3f4f6";
     const tc=STAGE_TC[d.stage]||"#374151";
+
+    // Days in stage badge
+    const dis = daysInStage(d);
+    let daysBadge = "";
+    if (dis !== null) {
+      const disClass = dis > 14 ? "overdue" : dis > 7 ? "stale" : "";
+      daysBadge = `<div class="days-badge ${disClass}">
+        <span class="days-num">${dis}d</span><span style="font-size:9px;color:#c4c9d4;">in stage</span>
+      </div>`;
+    }
+
+    // Note
+    const noteVal = d.note || "";
+    const noteHtml = `<div class="co-note" data-co="${esc(d.company)}" data-role="${esc(d.role)}"
+      data-ph="add note…" onclick="editNote(this)">${esc(noteVal)}</div>`;
+
+    // Added
+    const addedHtml = `<div class="co-added">${daysAgo(d.date_added)}</div>`;
+
+    // Follow-up date
+    const dateVal = isoToDateInput(d.date_update) || d.date_update || "";
+    const dateClass = "date-inp" + (dateVal ? " has-date" : "") + (isOverdue(dateVal) ? " overdue-date" : "");
+
     return `<tr>
       <td style="padding:0;width:4px;"><div class="row-bar" style="background:${STAGE_ACCENT[d.stage]||'#e5e7eb'};"></div></td>
       <td style="padding:8px 4px 8px 10px;width:44px;">
@@ -352,15 +559,25 @@ function renderTable(view) {
       <td style="padding:8px 10px;">
         <div class="co-name">${esc(d.company)}</div>
         <div class="co-role">${esc(d.role)}</div>
+        ${noteHtml}
+        ${addedHtml}
       </td>
       <td style="padding:8px 6px;">
         <div class="fit-sq" style="background:${fb};color:${ft};">${d.fit}</div>
       </td>
       <td style="padding:8px 6px;">
-        <select class="stage-select" style="background:${bg};color:${tc};"
-          onchange="changeStage(this,'${esc(d.company)}','${esc(d.role)}')">${opts}</select>
+        <div class="stage-wrap">
+          <select class="stage-select" style="background:${bg};color:${tc};"
+            onchange="changeStage(this,'${esc(d.company)}','${esc(d.role)}')">${opts}</select>
+          ${daysBadge}
+        </div>
       </td>
       <td style="padding:8px 6px;" class="salary-cell">${esc(d.salary)}</td>
+      <td style="padding:8px 6px; font-size:11px; color:var(--muted); white-space:nowrap;">${daysAgo(d.date_added)}</td>
+      <td style="padding:8px 6px;">
+        <input type="date" class="${dateClass}" value="${esc(dateVal)}"
+          onchange="changeDateUpdate(this,'${esc(d.company)}','${esc(d.role)}')">
+      </td>
       <td style="padding:8px 8px 8px 0;text-align:right;">${link}</td>
     </tr>`;
   }).join("");
@@ -378,11 +595,16 @@ function renderKanban(view) {
     const cardHtml=cards.length===0?`<div class="k-empty">пусто</div>`:
       cards.map(d=>{
         const[fb,ft]=fitBg(d.fit);
+        const dis = daysInStage(d);
+        const disStr = dis !== null ? `<span style="font-size:10px;color:var(--muted);margin-left:4px;">${dis}d</span>` : "";
         return`<div class="k-card" style="border-left:3px solid ${STAGE_ACCENT[s]||'#e5e7eb'};">
           <div class="k-card-co">${esc(d.company)}</div>
           <div class="k-card-role">${esc(d.role)}</div>
+          ${d.note ? `<div style="font-size:10px;color:#9ca3af;margin-top:4px;line-height:1.3;">${esc(d.note)}</div>` : ""}
           <div class="k-card-foot">
-            <span class="k-salary">${esc(d.salary)}</span>
+            <div style="display:flex;align-items:center;">
+              <span class="k-salary">${esc(d.salary)}</span>${disStr}
+            </div>
             <div class="k-fit" style="background:${fb};color:${ft};">${d.fit}</div>
           </div></div>`;
       }).join("");

@@ -3,9 +3,15 @@
  * Serves static assets (index.html) + REST API backed by KV
  *
  * GET  /api/jobs          → list all jobs (public)
- * PATCH /api/jobs         → update stage  { company, role, stage }
- * POST /api/jobs          → add a job     { company, role, fit, stage, salary, url, note }
+ * PATCH /api/jobs         → update any field { company, role, stage?, note?, date_update? }
+ * POST /api/jobs          → add a job { company, role, fit, stage, salary, url, note, date_update }
  * POST /api/jobs/seed     → load /data/seed.json into KV (one-time setup)
+ *
+ * Env vars:
+ *   JOB_TRACKER  — KV namespace binding
+ *   API_KEY      — optional write auth
+ *   BOT_TOKEN    — Telegram bot token (optional)
+ *   CHAT_ID      — Telegram chat_id (optional)
  */
 
 const CORS = {
@@ -35,29 +41,52 @@ async function saveJobs(env, jobs) {
   await env.JOB_TRACKER.put("jobs", JSON.stringify(jobs));
 }
 
-async function handleAPI(request, env, url) {
+async function sendTelegram(env, job) {
+  try {
+    const icon = job.fit >= 9 ? "🔥" : job.fit >= 8 ? "⭐" : "📌";
+    const text =
+      `${icon} Новая вакансия добавлена\n\n` +
+      `${job.company} — ${job.role}\n` +
+      `Fit: ${job.fit} | ${job.salary}\n` +
+      (job.url ? `\n${job.url}` : "");
+    await fetch(
+      `https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: env.CHAT_ID,
+          text,
+          disable_web_page_preview: false,
+        }),
+      }
+    );
+  } catch (_) {
+    // Telegram failure must not affect main request
+  }
+}
+
+async function handleAPI(request, env, ctx, url) {
   const method = request.method.toUpperCase();
 
   if (method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS });
   }
 
-  // GET — public read
   if (method === "GET") {
-    const jobs = await getJobs(env);
-    return json(jobs);
+    return json(await getJobs(env));
   }
 
-  // All writes require API key (optional — skipped if API_KEY not set)
   if (!checkKey(request, env)) return json({ error: "unauthorized" }, 401);
 
   const body = await request.json().catch(() => ({}));
 
-  // PATCH — update stage
+  // PATCH — update any field(s)
   if (method === "PATCH") {
-    const { company, role, stage } = body;
-    if (!company || !role || !stage)
-      return json({ error: "company, role, stage required" }, 400);
+    const { company, role, ...updates } = body;
+    if (!company || !role)
+      return json({ error: "company and role required" }, 400);
+
     const jobs = await getJobs(env);
     const job = jobs.find(
       (j) =>
@@ -65,12 +94,22 @@ async function handleAPI(request, env, url) {
         j.role.toLowerCase() === role.toLowerCase()
     );
     if (!job) return json({ error: "job not found" }, 404);
-    job.stage = stage;
+
+    const ALLOWED = ["stage", "note", "date_update", "salary", "fit", "url"];
+    for (const key of ALLOWED) {
+      if (updates[key] !== undefined) {
+        job[key] = updates[key];
+      }
+    }
+    if (updates.stage !== undefined) {
+      job.stage_updated_at = new Date().toISOString();
+    }
+
     await saveJobs(env, jobs);
     return json({ ok: true, job });
   }
 
-  // POST /api/jobs/seed — one-time seed from public/data/seed.json
+  // POST /api/jobs/seed
   if (method === "POST" && url.pathname.endsWith("/seed")) {
     const seedUrl = new URL("/data/seed.json", url.origin);
     const seedRes = await env.ASSETS.fetch(seedUrl.toString());
@@ -82,8 +121,9 @@ async function handleAPI(request, env, url) {
 
   // POST — add a new job
   if (method === "POST") {
-    const { company, role, fit, stage, salary, url: jobUrl, note } = body;
+    const { company, role, fit, stage, salary, url: jobUrl, note, date_update } = body;
     if (!company || !role) return json({ error: "company and role required" }, 400);
+
     const jobs = await getJobs(env);
     const exists = jobs.some(
       (j) =>
@@ -91,16 +131,27 @@ async function handleAPI(request, env, url) {
         j.role.toLowerCase() === role.toLowerCase()
     );
     if (exists) return json({ error: "duplicate" }, 409);
+
+    const now = new Date().toISOString();
     const newJob = {
-      company, role,
+      company,
+      role,
       fit: fit || 0,
       stage: stage || "NEW",
       salary: salary || "уточнить",
       url: jobUrl || "",
       note: note || "",
+      date_added: now,
+      stage_updated_at: now,
+      date_update: date_update || "",
     };
     jobs.unshift(newJob);
     await saveJobs(env, jobs);
+
+    if (env.BOT_TOKEN && env.CHAT_ID) {
+      ctx.waitUntil(sendTelegram(env, newJob));
+    }
+
     return json({ ok: true, job: newJob }, 201);
   }
 
@@ -110,13 +161,9 @@ async function handleAPI(request, env, url) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-
-    // Route API calls
     if (url.pathname.startsWith("/api/jobs")) {
-      return handleAPI(request, env, url);
+      return handleAPI(request, env, ctx, url);
     }
-
-    // Everything else → static assets (index.html, data/seed.json, etc.)
     return env.ASSETS.fetch(request);
   },
 };
