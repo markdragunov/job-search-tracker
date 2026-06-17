@@ -1,3 +1,11 @@
 name = "job-search-tracker"
+main = "worker.js"
 compatibility_date = "2024-09-23"
-pages_build_output_dir = "."
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "JOB_TRACKER"
+id = "6442ad1dcedc431080ef16a37da190d7"
