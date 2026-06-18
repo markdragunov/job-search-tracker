@@ -1,4 +1,4 @@
-# Job Tracker — mark-d.dev
+# Job Tracker — https://job-search-tracker.youthebestfucktherest.workers.dev/
 
 Senior PM job search tracker. Cloudflare Pages + KV, deploys to `mark-d.dev`.
 
