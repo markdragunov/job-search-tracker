@@ -2,11 +2,13 @@
  * Job Tracker — Cloudflare Worker
  * Serves static assets (index.html) + REST API backed by KV
  *
- * GET  /api/jobs          → list all jobs
- * PATCH /api/jobs         → update any field { company, role, ...fields }
- * POST /api/jobs          → add one job
- * POST /api/jobs/batch    → add multiple jobs, one Telegram digest
- * POST /api/jobs/seed     → load /data/seed.json into KV
+ * GET    /api/jobs          → list all jobs
+ * POST   /api/jobs          → add one job
+ * POST   /api/jobs/batch    → add multiple jobs, one Telegram digest
+ * POST   /api/jobs/seed     → load /data/seed.json into KV
+ * PATCH  /api/jobs          → update any field { company, role, ...fields }
+ * DELETE /api/jobs/:id      → delete by UUID (id field)
+ * DELETE /api/jobs          → delete by body { company, role }
  *
  * Env vars:
  *   JOB_TRACKER  — KV namespace binding
@@ -16,9 +18,14 @@
  *   DASHBOARD_URL — override dashboard link (default: auto from request origin)
  */
 
+// These two constants are replaced by deploy.sh before uploading.
+// Do not edit these lines — the markers must stay exactly as-is.
+const DASHBOARD_HTML = null; // INJECTED_HTML
+const SEED_JSON      = null; // INJECTED_SEED
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, X-Api-Key",
 };
 
@@ -118,10 +125,11 @@ async function tgSend(env, text) {
 function buildJob(fields, now) {
   const { company, role, fit, stage, salary, url: jobUrl, note, date_update, prio } = fields;
   return {
+    id: crypto.randomUUID(),
     company,
     role,
     fit: fit || 0,
-    stage: stage || "NEW",
+    stage: stage || "To apply",
     salary: salary || "уточнить",
     url: jobUrl || "",
     note: note || "",
@@ -147,6 +155,27 @@ async function handleAPI(request, env, ctx, url) {
 
   const body = await request.json().catch(() => ({}));
 
+  // DELETE — remove a job by UUID (/api/jobs/:id) or by { company, role } in body
+  if (method === "DELETE") {
+    const pathParts = url.pathname.split("/").filter(Boolean); // ["api","jobs",":id"]
+    const pathId = pathParts.length >= 3 ? pathParts[2] : null;
+    const jobs = await getJobs(env);
+    let idx = -1;
+    if (pathId) {
+      idx = jobs.findIndex(j => j.id === pathId);
+    }
+    if (idx === -1 && body.company && body.role) {
+      idx = jobs.findIndex(
+        j => j.company.toLowerCase() === body.company.toLowerCase() &&
+             j.role.toLowerCase() === body.role.toLowerCase()
+      );
+    }
+    if (idx === -1) return json({ error: "job not found" }, 404);
+    const [removed] = jobs.splice(idx, 1);
+    await saveJobs(env, jobs);
+    return json({ ok: true, deleted: { company: removed.company, role: removed.role } });
+  }
+
   // PATCH — update any field(s)
   if (method === "PATCH") {
     const { company, role, ...updates } = body;
@@ -161,7 +190,7 @@ async function handleAPI(request, env, ctx, url) {
     );
     if (!job) return json({ error: "job not found" }, 404);
 
-    const ALLOWED = ["stage", "note", "date_update", "salary", "fit", "url", "prio"];
+    const ALLOWED = ["stage", "note", "date_update", "salary", "fit", "url", "prio", "date_added"];
     for (const key of ALLOWED) {
       if (updates[key] !== undefined) job[key] = updates[key];
     }
@@ -175,10 +204,8 @@ async function handleAPI(request, env, ctx, url) {
 
   // POST /api/jobs/seed
   if (method === "POST" && url.pathname.endsWith("/seed")) {
-    const seedUrl = new URL("/data/seed.json", url.origin);
-    const seedRes = await env.ASSETS.fetch(seedUrl.toString());
-    if (!seedRes.ok) return json({ error: "seed.json not found" }, 500);
-    const seed = await seedRes.json();
+    if (!SEED_JSON) return json({ error: "seed data not available" }, 500);
+    const seed = JSON.parse(SEED_JSON);
     await saveJobs(env, seed);
     return json({ ok: true, count: seed.length });
   }
@@ -248,6 +275,8 @@ export default {
     if (url.pathname.startsWith("/api/jobs")) {
       return handleAPI(request, env, ctx, url);
     }
-    return env.ASSETS.fetch(request);
+    return new Response(DASHBOARD_HTML, {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   },
 };
